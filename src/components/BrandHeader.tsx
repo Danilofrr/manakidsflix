@@ -1,8 +1,19 @@
-import { Link } from "@tanstack/react-router";
-import { Search, Sparkles, Moon, Sun, ChevronDown, LayoutDashboard } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import {
+  Search,
+  Sparkles,
+  Moon,
+  Sun,
+  ChevronDown,
+  LayoutDashboard,
+  LogIn,
+  LogOut,
+} from "lucide-react";
 import mascote from "@/assets/mascote.png";
 import { useTheme } from "@/lib/theme";
 import { useAppStore } from "@/lib/app-store";
+import { useAuth } from "@/lib/auth";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +26,16 @@ import {
 export function BrandHeader() {
   const { theme, toggle } = useTheme();
   const { state } = useAppStore();
+  const { session, isAdmin, signOut } = useAuth();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  async function handleSignOut() {
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    await signOut();
+    navigate({ to: "/auth", replace: true });
+  }
   const profile =
     state.profiles.find((p) => p.id === state.activeProfileId) ?? state.profiles[0];
 
@@ -39,7 +60,7 @@ export function BrandHeader() {
           {[
             { label: "Início", to: "/" as const },
             { label: "Perfis", to: "/perfis" as const },
-            { label: "Admin", to: "/admin" as const },
+            ...(isAdmin ? [{ label: "Admin", to: "/admin" as const }] : []),
           ].map((item, i) => (
             <Link
               key={item.label}
@@ -103,16 +124,33 @@ export function BrandHeader() {
                     Minha conta
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/admin" className="px-4 py-2.5 font-display text-sm">
-                    <LayoutDashboard className="h-4 w-4" />
-                    Painel do admin
-                  </Link>
-                </DropdownMenuItem>
+                {isAdmin && (
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin" className="px-4 py-2.5 font-display text-sm">
+                      <LayoutDashboard className="h-4 w-4" />
+                      Painel do admin
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem className="px-4 py-2.5 font-display text-sm">Ajuda</DropdownMenuItem>
                 <DropdownMenuItem className="px-4 py-2.5 font-display text-sm">Sobre</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="px-4 py-2.5 font-display text-sm">Sair</DropdownMenuItem>
+                {session ? (
+                  <DropdownMenuItem
+                    onClick={handleSignOut}
+                    className="px-4 py-2.5 font-display text-sm"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Sair
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem asChild>
+                    <Link to="/auth" className="px-4 py-2.5 font-display text-sm">
+                      <LogIn className="h-4 w-4" />
+                      Entrar
+                    </Link>
+                  </DropdownMenuItem>
+                )}
               </div>
             </DropdownMenuContent>
           </DropdownMenu>
