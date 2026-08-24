@@ -44,10 +44,12 @@ function AuthPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!authLoading && session) {
+    // Só redireciona depois que a role real foi lida do banco,
+    // senão o admin cai na home antes da consulta terminar.
+    if (!authLoading && !roleLoading && session) {
       navigate({ to: isAdmin ? "/admin" : "/", replace: true });
     }
-  }, [authLoading, session, isAdmin, navigate]);
+  }, [authLoading, roleLoading, session, isAdmin, navigate]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
