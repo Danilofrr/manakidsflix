@@ -103,6 +103,9 @@ export const stories: Story[] = [
 
 export const storyBySlug = (slug: string) => stories.find((s) => s.slug === slug);
 
+const pick = (...slugs: string[]) =>
+  slugs.map((slug) => storyBySlug(slug)).filter((s): s is Story => Boolean(s));
+
 export const rows = [
   {
     id: "continuar",
@@ -114,19 +117,19 @@ export const rows = [
     id: "favoritas",
     title: "Histórias mais amadas",
     subtitle: "Campeãs de repeteco",
-    items: [stories[0], stories[1], stories[5], stories[4], stories[3]],
+    items: pick("a-arca-de-noe", "davi-e-o-gigante", "o-primeiro-natal", "moises-e-o-mar-vermelho", "jonas-e-o-grande-peixe"),
   },
   {
     id: "aventura",
     title: "Aventuras corajosas",
     subtitle: "Para quem gosta de emoção",
-    items: [stories[1], stories[4], stories[2], stories[3]],
+    items: pick("davi-e-o-gigante", "moises-e-o-mar-vermelho", "daniel-e-os-leoes", "jonas-e-o-grande-peixe"),
   },
   {
     id: "soninho",
     title: "Hora do soninho",
     subtitle: "Bem calminhas, para dormir",
-    items: [stories[6], stories[5], stories[0]],
+    items: pick("o-jardim-do-eden", "o-primeiro-natal", "a-arca-de-noe"),
   },
 ];
 

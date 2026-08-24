@@ -3,7 +3,7 @@ import { Play, Plus, Star, Music, Moon, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BrandHeader } from "@/components/BrandHeader";
 import { StoryRow } from "@/components/StoryRow";
-import { rows, stories } from "@/lib/catalog";
+import { rows, storyBySlug } from "@/lib/catalog";
 import heroImage from "@/assets/hero-mana.jpg";
 import mascote from "@/assets/mascote.png";
 
@@ -29,7 +29,7 @@ export const Route = createFileRoute("/")({
   component: Home,
 });
 
-const destaque = stories[4];
+const destaque = storyBySlug("moises-e-o-mar-vermelho")!;
 
 const chips = [
   { label: "Aventura", icon: Compass, cls: "bg-primary text-primary-foreground" },
