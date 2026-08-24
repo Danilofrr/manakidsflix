@@ -1,6 +1,8 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { stories as defaultStories, rows as defaultRows, categories as defaultCategories } from "@/lib/catalog";
 import heroImage from "@/assets/hero-mana.jpg";
+import { loadCms, loadSettings, saveCms } from "@/lib/cms";
+import { useAuth } from "@/lib/auth";
 
 export type Kind = "filme" | "serie";
 
@@ -139,23 +141,78 @@ const move = <T,>(list: T[], index: number, dir: -1 | 1): T[] => {
 
 export function AppStoreProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState>(defaultState);
+  const { isAdmin } = useAuth();
+  const isAdminRef = useRef(isAdmin);
+  isAdminRef.current = isAdmin;
+  const loaded = useRef(false);
 
-  useEffect(() => {
+  // Salvamento no banco: com debounce (evita um sync por tecla digitada) e
+  // em fila (dois syncs simultâneos apagavam itens um do outro).
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pending = useRef<AppState | null>(null);
+  const saving = useRef(false);
+
+  const flushSave = async () => {
+    if (saving.current) return;
+    const next = pending.current;
+    if (!next) return;
+    pending.current = null;
+    saving.current = true;
     try {
-      const raw = window.localStorage.getItem(KEY);
-      if (raw) setState({ ...defaultState, ...(JSON.parse(raw) as AppState) });
-    } catch {
-      /* estado padrão */
+      await saveCms(next);
+    } catch (err) {
+      console.error("Falha ao salvar no banco", err);
+    } finally {
+      saving.current = false;
+      if (pending.current) void flushSave();
     }
+  };
+
+  const scheduleSave = (next: AppState) => {
+    pending.current = next;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => void flushSave(), 700);
+  };
+
+
+  // Conteúdo vem do banco; perfis/kids ficam por dispositivo no navegador.
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const [cms, settings] = await Promise.all([loadCms(), loadSettings()]);
+      if (!active) return;
+      let local: Partial<AppState> = {};
+      try {
+        local = JSON.parse(window.localStorage.getItem(KEY) ?? "{}") as Partial<AppState>;
+      } catch {
+        /* ignora */
+      }
+      setState((prev) => ({
+        ...prev,
+        ...(cms ?? {}),
+        ...(settings?.brand ? { brand: settings.brand as AppState["brand"] } : {}),
+        ...(settings?.texts ? { texts: settings.texts as AppState["texts"] } : {}),
+        ...(local.profiles ? { profiles: local.profiles } : {}),
+        ...(local.activeProfileId ? { activeProfileId: local.activeProfileId } : {}),
+      }));
+      loaded.current = true;
+    })();
+    return () => {
+      active = false;
+    };
   }, []);
 
   const persist = (next: AppState) => {
     setState(next);
     try {
-      window.localStorage.setItem(KEY, JSON.stringify(next));
+      window.localStorage.setItem(
+        KEY,
+        JSON.stringify({ profiles: next.profiles, activeProfileId: next.activeProfileId }),
+      );
     } catch {
       /* ignora quota */
     }
+    if (isAdminRef.current && loaded.current) scheduleSave(next);
   };
 
   useEffect(() => {
