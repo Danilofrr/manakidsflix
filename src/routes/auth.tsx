@@ -9,7 +9,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { useAuth } from "@/lib/auth";
 
-const ADMIN_EMAIL = "daniloferreiraa80@gmail.com";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
