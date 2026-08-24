@@ -189,7 +189,7 @@ function AuthPage() {
 
         <p className="mt-4 flex items-center justify-center gap-1.5 rounded-2xl bg-muted px-3 py-2 text-center text-xs text-muted-foreground">
           <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
-          Acesso de admin liberado para {ADMIN_EMAIL}
+          Seus dados ficam protegidos e o acesso é liberado conforme sua conta.
         </p>
       </div>
     </main>
