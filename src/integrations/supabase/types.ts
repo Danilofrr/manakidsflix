@@ -14,6 +14,202 @@ export type Database = {
   }
   public: {
     Tables: {
+      banners: {
+        Row: {
+          active: boolean
+          badge: string | null
+          created_at: string
+          cta_primary: string
+          cta_secondary: string
+          description: string | null
+          id: string
+          image: string | null
+          sort_order: number
+          title: string
+          title_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          badge?: string | null
+          created_at?: string
+          cta_primary?: string
+          cta_secondary?: string
+          description?: string | null
+          id?: string
+          image?: string | null
+          sort_order?: number
+          title: string
+          title_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          badge?: string | null
+          created_at?: string
+          cta_primary?: string
+          cta_secondary?: string
+          description?: string | null
+          id?: string
+          image?: string | null
+          sort_order?: number
+          title?: string
+          title_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "banners_title_id_fkey"
+            columns: ["title_id"]
+            isOneToOne: false
+            referencedRelation: "titles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      categories: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          sort_order: number
+          tone: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          sort_order?: number
+          tone?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          sort_order?: number
+          tone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      episodes: {
+        Row: {
+          cover: string | null
+          created_at: string
+          duration: string | null
+          id: string
+          name: string
+          number: number
+          published: boolean
+          season_id: string
+          summary: string | null
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          cover?: string | null
+          created_at?: string
+          duration?: string | null
+          id?: string
+          name: string
+          number?: number
+          published?: boolean
+          season_id: string
+          summary?: string | null
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          cover?: string | null
+          created_at?: string
+          duration?: string | null
+          id?: string
+          name?: string
+          number?: number
+          published?: boolean
+          season_id?: string
+          summary?: string | null
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "episodes_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      home_section_items: {
+        Row: {
+          id: string
+          section_id: string
+          sort_order: number
+          title_id: string
+        }
+        Insert: {
+          id?: string
+          section_id: string
+          sort_order?: number
+          title_id: string
+        }
+        Update: {
+          id?: string
+          section_id?: string
+          sort_order?: number
+          title_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "home_section_items_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "home_sections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "home_section_items_title_id_fkey"
+            columns: ["title_id"]
+            isOneToOne: false
+            referencedRelation: "titles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      home_sections: {
+        Row: {
+          created_at: string
+          id: string
+          sort_order: number
+          subtitle: string | null
+          title: string
+          updated_at: string
+          visible: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          sort_order?: number
+          subtitle?: string | null
+          title: string
+          updated_at?: string
+          visible?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          sort_order?: number
+          subtitle?: string | null
+          title?: string
+          updated_at?: string
+          visible?: boolean
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -32,6 +228,62 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           id?: string
+        }
+        Relationships: []
+      }
+      seasons: {
+        Row: {
+          created_at: string
+          id: string
+          name: string | null
+          number: number
+          title_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name?: string | null
+          number?: number
+          title_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string | null
+          number?: number
+          title_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seasons_title_id_fkey"
+            columns: ["title_id"]
+            isOneToOne: false
+            referencedRelation: "titles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      site_settings: {
+        Row: {
+          brand: Json
+          id: string
+          texts: Json
+          updated_at: string
+        }
+        Insert: {
+          brand?: Json
+          id?: string
+          texts?: Json
+          updated_at?: string
+        }
+        Update: {
+          brand?: Json
+          id?: string
+          texts?: Json
+          updated_at?: string
         }
         Relationships: []
       }
@@ -62,6 +314,90 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      title_categories: {
+        Row: {
+          category_id: string
+          title_id: string
+        }
+        Insert: {
+          category_id: string
+          title_id: string
+        }
+        Update: {
+          category_id?: string
+          title_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "title_categories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "title_categories_title_id_fkey"
+            columns: ["title_id"]
+            isOneToOne: false
+            referencedRelation: "titles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      titles: {
+        Row: {
+          age_range: string | null
+          cover: string | null
+          created_at: string
+          duration: string | null
+          featured: boolean
+          id: string
+          kind: string
+          published: boolean
+          slug: string
+          sort_order: number
+          summary: string | null
+          tags: string[]
+          title: string
+          updated_at: string
+          verse: string | null
+        }
+        Insert: {
+          age_range?: string | null
+          cover?: string | null
+          created_at?: string
+          duration?: string | null
+          featured?: boolean
+          id?: string
+          kind?: string
+          published?: boolean
+          slug: string
+          sort_order?: number
+          summary?: string | null
+          tags?: string[]
+          title: string
+          updated_at?: string
+          verse?: string | null
+        }
+        Update: {
+          age_range?: string | null
+          cover?: string | null
+          created_at?: string
+          duration?: string | null
+          featured?: boolean
+          id?: string
+          kind?: string
+          published?: boolean
+          slug?: string
+          sort_order?: number
+          summary?: string | null
+          tags?: string[]
+          title?: string
+          updated_at?: string
+          verse?: string | null
         }
         Relationships: []
       }
