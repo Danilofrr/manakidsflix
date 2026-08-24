@@ -247,3 +247,5 @@
 @utility animate-float-soft {
   animation: float-soft 5s ease-in-out infinite;
 }
+
+@source inline("bg-{primary,secondary,accent,sunny,mint}");
