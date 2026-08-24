@@ -56,7 +56,7 @@ const tones: Tone[] = ["primary", "secondary", "accent", "sunny", "mint"];
 function AdminPage() {
   const store = useAppStore();
   const { state } = store;
-  const { session, isAdmin, loading } = useAuth();
+  const { session, isAdmin, loading, roleLoading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -64,7 +64,7 @@ function AdminPage() {
     if (!session) navigate({ to: "/auth", replace: true });
   }, [loading, session, navigate]);
 
-  if (loading || !session) {
+  if (loading || roleLoading || !session) {
     return (
       <div className="grid min-h-screen place-items-center bg-background">
         <p className="font-display text-muted-foreground">Carregando…</p>
