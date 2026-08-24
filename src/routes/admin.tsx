@@ -1,5 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   ArrowUp,
@@ -26,6 +26,7 @@ import {
   type Row,
   type Tone,
 } from "@/lib/app-store";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -53,6 +54,43 @@ const tones: Tone[] = ["primary", "secondary", "accent", "sunny", "mint"];
 function AdminPage() {
   const store = useAppStore();
   const { state } = store;
+  const { session, isAdmin, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (loading) return;
+    if (!session) navigate({ to: "/auth", replace: true });
+  }, [loading, session, navigate]);
+
+  if (loading || !session) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-background">
+        <p className="font-display text-muted-foreground">Carregando…</p>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-background">
+        <BrandHeader />
+        <main className="mx-auto max-w-md px-4 py-20 text-center">
+          <h1 className="font-display text-2xl font-extrabold">Área restrita</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Esta conta não tem permissão de admin. Entre com a conta de administrador para
+            gerenciar o catálogo.
+          </p>
+          <Link
+            to="/"
+            className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 font-display text-sm text-primary-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Voltar para o início
+          </Link>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
