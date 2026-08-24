@@ -47,12 +47,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!userId) {
-      setRole(null);
-      setRoleLoading(false);
+      setResolved({ userId: null, role: null });
       return;
     }
     let active = true;
-    setRoleLoading(true);
     supabase
       .from("user_roles")
       .select("role")
@@ -60,17 +58,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then(({ data }) => {
         if (!active) return;
         const roles = (data ?? []).map((r) => r.role as AppRole);
-        setRole(roles.includes("admin") ? "admin" : (roles[0] ?? "cliente"));
-        setRoleLoading(false);
+        setResolved({
+          userId,
+          role: roles.includes("admin") ? "admin" : (roles[0] ?? "cliente"),
+        });
       });
     return () => {
       active = false;
     };
   }, [userId]);
 
+  const roleLoading = Boolean(userId) && resolved.userId !== userId;
+  const role = roleLoading ? null : resolved.role;
+
   async function signOut() {
     await supabase.auth.signOut();
-    setRole(null);
+    setResolved({ userId: null, role: null });
   }
 
   return (
