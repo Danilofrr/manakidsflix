@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as PerfisRouteImport } from './routes/perfis'
 import { Route as HistoriaSlugRouteImport } from './routes/historia.$slug'
 
@@ -22,6 +23,11 @@ const IndexRoute = IndexRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PerfisRoute = PerfisRouteImport.update({
@@ -38,12 +44,14 @@ const HistoriaSlugRoute = HistoriaSlugRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/auth': typeof AuthRoute
   '/perfis': typeof PerfisRoute
   '/historia/$slug': typeof HistoriaSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/auth': typeof AuthRoute
   '/perfis': typeof PerfisRoute
   '/historia/$slug': typeof HistoriaSlugRoute
 }
@@ -51,20 +59,22 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/auth': typeof AuthRoute
   '/perfis': typeof PerfisRoute
   '/historia/$slug': typeof HistoriaSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/perfis' | '/historia/$slug'
+  fullPaths: '/' | '/admin' | '/auth' | '/perfis' | '/historia/$slug'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/perfis' | '/historia/$slug'
-  id: '__root__' | '/' | '/admin' | '/perfis' | '/historia/$slug'
+  to: '/' | '/admin' | '/auth' | '/perfis' | '/historia/$slug'
+  id: '__root__' | '/' | '/admin' | '/auth' | '/perfis' | '/historia/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  AuthRoute: typeof AuthRoute
   PerfisRoute: typeof PerfisRoute
   HistoriaSlugRoute: typeof HistoriaSlugRoute
 }
@@ -83,6 +93,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/perfis': {
@@ -105,6 +122,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  AuthRoute: AuthRoute,
   PerfisRoute: PerfisRoute,
   HistoriaSlugRoute: HistoriaSlugRoute,
 }
