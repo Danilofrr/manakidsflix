@@ -9,7 +9,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { useAuth } from "@/lib/auth";
 
-const ADMIN_EMAIL = "daniloferreiraa80@gmail.com";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -34,7 +33,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const { session, isAdmin, loading: authLoading } = useAuth();
+  const { session, isAdmin, loading: authLoading, roleLoading } = useAuth();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -44,10 +43,12 @@ function AuthPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!authLoading && session) {
+    // Só redireciona depois que a role real foi lida do banco,
+    // senão o admin cai na home antes da consulta terminar.
+    if (!authLoading && !roleLoading && session) {
       navigate({ to: isAdmin ? "/admin" : "/", replace: true });
     }
-  }, [authLoading, session, isAdmin, navigate]);
+  }, [authLoading, roleLoading, session, isAdmin, navigate]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -187,7 +188,7 @@ function AuthPage() {
 
         <p className="mt-4 flex items-center justify-center gap-1.5 rounded-2xl bg-muted px-3 py-2 text-center text-xs text-muted-foreground">
           <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
-          Acesso de admin liberado para {ADMIN_EMAIL}
+          Seus dados ficam protegidos e o acesso é liberado conforme sua conta.
         </p>
       </div>
     </main>
