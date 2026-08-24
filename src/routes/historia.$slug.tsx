@@ -28,7 +28,7 @@ export const Route = createFileRoute("/historia/$slug")({
       ],
     };
   },
-  component: StoryPage;
+  component: StoryPage,
 });
 
 function StoryPage() {
