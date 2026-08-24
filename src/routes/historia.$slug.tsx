@@ -1,27 +1,20 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Play, Plus, ArrowLeft, Clock, BookOpen, Baby } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BrandHeader } from "@/components/BrandHeader";
 import { StoryRow } from "@/components/StoryRow";
-import { storyBySlug, stories } from "@/lib/catalog";
+import { useAppStore } from "@/lib/app-store";
 
 export const Route = createFileRoute("/historia/$slug")({
-  loader: ({ params }) => {
-    const story = storyBySlug(params.slug);
-    if (!story) throw notFound();
-    return { story };
-  },
-  head: ({ loaderData }) => {
-    const story = loaderData?.story;
-    const title = story ? `${story.title} | Maná Kids+` : "História | Maná Kids+";
-    const description = story
-      ? `${story.summary} Episódio animado de ${story.duration} para crianças de ${story.ageRange}.`
-      : "Histórias bíblicas animadas para crianças no Maná Kids+.";
+  head: ({ params }) => {
+    const title = "História | Maná Kids+";
+    const description =
+      "Episódio animado de histórias bíblicas para crianças no Maná Kids+, com narração lúdica e visual colorido.";
     return {
       meta: [
         { title },
         { name: "description", content: description },
-        { property: "og:title", content: title },
+        { property: "og:title", content: `${params.slug} | Maná Kids+` },
         { property: "og:description", content: description },
         { property: "og:type", content: "video.episode" },
         { name: "twitter:card", content: "summary_large_image" },
@@ -32,8 +25,27 @@ export const Route = createFileRoute("/historia/$slug")({
 });
 
 function StoryPage() {
-  const { story } = Route.useLoaderData();
-  const related = stories.filter((s) => s.slug !== story.slug).slice(0, 5);
+  const { slug } = Route.useParams();
+  const { state, storyBySlug } = useAppStore();
+  const story = storyBySlug(slug);
+  const related = state.stories.filter((s) => s.slug !== slug).slice(0, 5);
+
+  if (!story) {
+    return (
+      <div className="min-h-screen bg-background">
+        <BrandHeader />
+        <div className="mx-auto max-w-xl px-4 py-24 text-center">
+          <h1 className="font-display text-3xl font-extrabold">História não encontrada</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Ela pode ter sido removida no painel do admin.
+          </p>
+          <Button variant="play" size="pill" className="mt-6" asChild>
+            <Link to="/">Voltar para o início</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -76,7 +88,10 @@ function StoryPage() {
           </div>
 
           <div>
-            <h1 className="font-display text-3xl font-extrabold leading-tight sm:text-4xl">
+            <span className="rounded-full bg-muted px-3 py-1 font-display text-xs uppercase text-muted-foreground">
+              {story.kind === "serie" ? "Série" : "Filme"}
+            </span>
+            <h1 className="mt-2 font-display text-3xl font-extrabold leading-tight sm:text-4xl">
               {story.title}
             </h1>
             <div className="mt-3 flex flex-wrap gap-2">
