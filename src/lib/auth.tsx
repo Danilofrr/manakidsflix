@@ -20,9 +20,14 @@ const AuthContext = createContext<AuthValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
-  const [role, setRole] = useState<AppRole | null>(null);
+  // guarda a role já resolvida junto com o id do usuário dono dela,
+  // para que nunca exista um instante em que a role parece "resolvida"
+  // para um usuário diferente do da sessão atual.
+  const [resolved, setResolved] = useState<{ userId: string | null; role: AppRole | null }>({
+    userId: null,
+    role: null,
+  });
   const [loading, setLoading] = useState(true);
-  const [roleLoading, setRoleLoading] = useState(true);
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
