@@ -2,11 +2,17 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
+export type AppRole = "admin" | "cliente";
+
 type AuthValue = {
   session: Session | null;
   user: User | null;
+  role: AppRole | null;
   isAdmin: boolean;
+  /** true enquanto a sessão está sendo carregada */
   loading: boolean;
+  /** true enquanto a role do usuário ainda não foi resolvida no banco */
+  roleLoading: boolean;
   signOut: () => Promise<void>;
 };
 
