@@ -131,8 +131,9 @@ function AdminPage() {
           ))}
         </div>
 
-        <Tabs defaultValue="catalogo" className="mt-8">
+        <Tabs defaultValue="clientes" className="mt-8">
           <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 rounded-2xl">
+            <TabsTrigger value="clientes">Clientes e assinaturas</TabsTrigger>
             <TabsTrigger value="catalogo">Filmes e séries</TabsTrigger>
             <TabsTrigger value="fileiras">Fileiras</TabsTrigger>
             <TabsTrigger value="categorias">Categorias</TabsTrigger>
@@ -140,9 +141,13 @@ function AdminPage() {
             <TabsTrigger value="cores">Cores</TabsTrigger>
           </TabsList>
 
+          <TabsContent value="clientes" className="mt-6">
+            <ClientsTab />
+          </TabsContent>
           <TabsContent value="catalogo" className="mt-6">
             <CatalogTab />
           </TabsContent>
+
           <TabsContent value="fileiras" className="mt-6">
             <RowsTab />
           </TabsContent>
