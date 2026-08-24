@@ -133,15 +133,16 @@ function AdminPage() {
           ))}
         </div>
 
-        <Tabs defaultValue="clientes" className="mt-8">
-          <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 rounded-2xl">
-            <TabsTrigger value="clientes">Clientes e assinaturas</TabsTrigger>
-            <TabsTrigger value="catalogo">Filmes e séries</TabsTrigger>
-            <TabsTrigger value="fileiras">Fileiras</TabsTrigger>
-            <TabsTrigger value="categorias">Categorias</TabsTrigger>
-            <TabsTrigger value="banner">Banner e textos</TabsTrigger>
-            <TabsTrigger value="cores">Cores</TabsTrigger>
+        <Tabs defaultValue="catalogo" className="mt-8">
+          <TabsList className="grid h-auto w-full grid-cols-2 gap-1 rounded-2xl p-1 sm:flex sm:flex-wrap sm:justify-start">
+            <TabsTrigger className="whitespace-normal px-3 py-2 text-xs sm:text-sm" value="catalogo">Filmes e séries</TabsTrigger>
+            <TabsTrigger className="whitespace-normal px-3 py-2 text-xs sm:text-sm" value="fileiras">Fileiras</TabsTrigger>
+            <TabsTrigger className="whitespace-normal px-3 py-2 text-xs sm:text-sm" value="categorias">Categorias</TabsTrigger>
+            <TabsTrigger className="whitespace-normal px-3 py-2 text-xs sm:text-sm" value="banner">Banner e textos</TabsTrigger>
+            <TabsTrigger className="whitespace-normal px-3 py-2 text-xs sm:text-sm" value="cores">Cores</TabsTrigger>
+            <TabsTrigger className="whitespace-normal px-3 py-2 text-xs sm:text-sm" value="clientes">Clientes</TabsTrigger>
           </TabsList>
+
 
           <TabsContent value="clientes" className="mt-6">
             <ClientsTab />
