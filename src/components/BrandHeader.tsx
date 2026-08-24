@@ -1,8 +1,23 @@
 import { Link } from "@tanstack/react-router";
-import { Search, Sparkles } from "lucide-react";
+import { Search, Sparkles, Moon, Sun, ChevronDown, LayoutDashboard } from "lucide-react";
 import mascote from "@/assets/mascote.png";
+import { useTheme } from "@/lib/theme";
+import { useAppStore } from "@/lib/app-store";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function BrandHeader() {
+  const { theme, toggle } = useTheme();
+  const { state } = useAppStore();
+  const profile =
+    state.profiles.find((p) => p.id === state.activeProfileId) ?? state.profiles[0];
+
   return (
     <header className="sticky top-0 z-50 border-b border-border/60 bg-background/85 backdrop-blur-xl">
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center gap-3 px-4 sm:px-6">
@@ -22,10 +37,9 @@ export function BrandHeader() {
 
         <nav className="ml-4 hidden items-center gap-1 md:flex">
           {[
-            { label: "Início", to: "/" },
-            { label: "Histórias", to: "/" },
-            { label: "Músicas", to: "/" },
-            { label: "Meus favoritos", to: "/" },
+            { label: "Início", to: "/" as const },
+            { label: "Perfis", to: "/perfis" as const },
+            { label: "Admin", to: "/admin" as const },
           ].map((item, i) => (
             <Link
               key={item.label}
@@ -48,13 +62,60 @@ export function BrandHeader() {
           >
             <Search className="h-5 w-5" />
           </button>
+
+          <button
+            onClick={toggle}
+            aria-label={theme === "dark" ? "Ativar modo claro" : "Ativar modo escuro"}
+            className="grid h-10 w-10 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </button>
+
           <span className="hidden items-center gap-1.5 rounded-full bg-sunny px-3 py-1.5 font-display text-xs text-sunny-foreground sm:inline-flex">
             <Sparkles className="h-3.5 w-3.5" />
             Modo criança
           </span>
-          <div className="grid h-10 w-10 place-items-center rounded-full bg-gradient-sky font-display text-sm text-primary-foreground shadow-card">
-            N
-          </div>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex items-center gap-2 rounded-full px-1.5 py-1 transition-colors hover:bg-muted">
+              <span className="hidden font-display text-sm sm:inline">{profile?.name}</span>
+              <span
+                className="grid h-9 w-9 place-items-center rounded-full text-base shadow-card ring-2 ring-background"
+                style={{ backgroundColor: profile?.color }}
+                aria-hidden="true"
+              >
+                {profile?.emoji}
+              </span>
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 overflow-hidden rounded-2xl p-0">
+              <DropdownMenuLabel asChild>
+                <Link
+                  to="/perfis"
+                  className="block bg-grape px-4 py-3.5 font-display text-sm text-grape-foreground"
+                >
+                  Gerenciar perfis
+                </Link>
+              </DropdownMenuLabel>
+              <div className="py-2">
+                <DropdownMenuItem asChild>
+                  <Link to="/perfis" className="px-4 py-2.5 font-display text-sm">
+                    Minha conta
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/admin" className="px-4 py-2.5 font-display text-sm">
+                    <LayoutDashboard className="h-4 w-4" />
+                    Painel do admin
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="px-4 py-2.5 font-display text-sm">Ajuda</DropdownMenuItem>
+                <DropdownMenuItem className="px-4 py-2.5 font-display text-sm">Sobre</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="px-4 py-2.5 font-display text-sm">Sair</DropdownMenuItem>
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>
