@@ -69,6 +69,7 @@ export type Database = {
       }
       categories: {
         Row: {
+          active: boolean
           created_at: string
           id: string
           label: string
@@ -77,6 +78,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          active?: boolean
           created_at?: string
           id?: string
           label: string
@@ -85,6 +87,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          active?: boolean
           created_at?: string
           id?: string
           label?: string
@@ -103,10 +106,16 @@ export type Database = {
           name: string
           number: number
           published: boolean
+          release_date: string | null
           season_id: string
+          sort_order: number
+          status: string
           summary: string | null
           updated_at: string
+          video_asset_id: string | null
+          video_source: string
           video_url: string | null
+          views: number
         }
         Insert: {
           cover?: string | null
@@ -116,10 +125,16 @@ export type Database = {
           name: string
           number?: number
           published?: boolean
+          release_date?: string | null
           season_id: string
+          sort_order?: number
+          status?: string
           summary?: string | null
           updated_at?: string
+          video_asset_id?: string | null
+          video_source?: string
           video_url?: string | null
+          views?: number
         }
         Update: {
           cover?: string | null
@@ -129,10 +144,16 @@ export type Database = {
           name?: string
           number?: number
           published?: boolean
+          release_date?: string | null
           season_id?: string
+          sort_order?: number
+          status?: string
           summary?: string | null
           updated_at?: string
+          video_asset_id?: string | null
+          video_source?: string
           video_url?: string | null
+          views?: number
         }
         Relationships: [
           {
@@ -140,6 +161,100 @@ export type Database = {
             columns: ["season_id"]
             isOneToOne: false
             referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "episodes_video_asset_id_fkey"
+            columns: ["video_asset_id"]
+            isOneToOne: false
+            referencedRelation: "media_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hero_slides: {
+        Row: {
+          badge: string | null
+          classification: string | null
+          created_at: string
+          cta_primary: string
+          cta_secondary: string
+          description: string | null
+          duration: string | null
+          id: string
+          image_desktop: string | null
+          image_mobile: string | null
+          logo: string | null
+          media_type: string
+          published: boolean
+          slide_seconds: number
+          sort_order: number
+          title: string
+          title_id: string | null
+          updated_at: string
+          video_asset_id: string | null
+          video_url: string | null
+          year: number | null
+        }
+        Insert: {
+          badge?: string | null
+          classification?: string | null
+          created_at?: string
+          cta_primary?: string
+          cta_secondary?: string
+          description?: string | null
+          duration?: string | null
+          id?: string
+          image_desktop?: string | null
+          image_mobile?: string | null
+          logo?: string | null
+          media_type?: string
+          published?: boolean
+          slide_seconds?: number
+          sort_order?: number
+          title: string
+          title_id?: string | null
+          updated_at?: string
+          video_asset_id?: string | null
+          video_url?: string | null
+          year?: number | null
+        }
+        Update: {
+          badge?: string | null
+          classification?: string | null
+          created_at?: string
+          cta_primary?: string
+          cta_secondary?: string
+          description?: string | null
+          duration?: string | null
+          id?: string
+          image_desktop?: string | null
+          image_mobile?: string | null
+          logo?: string | null
+          media_type?: string
+          published?: boolean
+          slide_seconds?: number
+          sort_order?: number
+          title?: string
+          title_id?: string | null
+          updated_at?: string
+          video_asset_id?: string | null
+          video_url?: string | null
+          year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hero_slides_title_id_fkey"
+            columns: ["title_id"]
+            isOneToOne: false
+            referencedRelation: "titles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hero_slides_video_asset_id_fkey"
+            columns: ["video_asset_id"]
+            isOneToOne: false
+            referencedRelation: "media_assets"
             referencedColumns: ["id"]
           },
         ]
@@ -182,8 +297,11 @@ export type Database = {
       }
       home_sections: {
         Row: {
+          category_id: string | null
           created_at: string
           id: string
+          kind: string
+          limit_count: number
           sort_order: number
           subtitle: string | null
           title: string
@@ -191,8 +309,11 @@ export type Database = {
           visible: boolean
         }
         Insert: {
+          category_id?: string | null
           created_at?: string
           id?: string
+          kind?: string
+          limit_count?: number
           sort_order?: number
           subtitle?: string | null
           title: string
@@ -200,13 +321,123 @@ export type Database = {
           visible?: boolean
         }
         Update: {
+          category_id?: string | null
           created_at?: string
           id?: string
+          kind?: string
+          limit_count?: number
           sort_order?: number
           subtitle?: string | null
           title?: string
           updated_at?: string
           visible?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "home_sections_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_assets: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          duration_seconds: number | null
+          folder: string
+          height: number | null
+          id: string
+          kind: string
+          mime_type: string | null
+          name: string
+          provider: string | null
+          provider_id: string | null
+          size_bytes: number | null
+          status: string
+          storage_path: string | null
+          thumbnail_url: string | null
+          updated_at: string
+          url: string
+          width: number | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          duration_seconds?: number | null
+          folder?: string
+          height?: number | null
+          id?: string
+          kind?: string
+          mime_type?: string | null
+          name: string
+          provider?: string | null
+          provider_id?: string | null
+          size_bytes?: number | null
+          status?: string
+          storage_path?: string | null
+          thumbnail_url?: string | null
+          updated_at?: string
+          url: string
+          width?: number | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          duration_seconds?: number | null
+          folder?: string
+          height?: number | null
+          id?: string
+          kind?: string
+          mime_type?: string | null
+          name?: string
+          provider?: string | null
+          provider_id?: string | null
+          size_bytes?: number | null
+          status?: string
+          storage_path?: string | null
+          thumbnail_url?: string | null
+          updated_at?: string
+          url?: string
+          width?: number | null
+        }
+        Relationships: []
+      }
+      plans: {
+        Row: {
+          active: boolean
+          benefits: string[]
+          created_at: string
+          id: string
+          name: string
+          period: string
+          price_cents: number
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          benefits?: string[]
+          created_at?: string
+          id?: string
+          name: string
+          period?: string
+          price_cents?: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          benefits?: string[]
+          created_at?: string
+          id?: string
+          name?: string
+          period?: string
+          price_cents?: number
+          sort_order?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -289,33 +520,53 @@ export type Database = {
       }
       subscriptions: {
         Row: {
+          amount_cents: number
           created_at: string
           current_period_end: string | null
           id: string
+          last_seen_at: string | null
           plan: string
+          plan_id: string | null
+          started_at: string
           status: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          amount_cents?: number
           created_at?: string
           current_period_end?: string | null
           id?: string
+          last_seen_at?: string | null
           plan?: string
+          plan_id?: string | null
+          started_at?: string
           status?: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          amount_cents?: number
           created_at?: string
           current_period_end?: string | null
           id?: string
+          last_seen_at?: string | null
           plan?: string
+          plan_id?: string | null
+          started_at?: string
           status?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       title_categories: {
         Row: {
@@ -350,56 +601,109 @@ export type Database = {
       titles: {
         Row: {
           age_range: string | null
+          banner: string | null
+          classification: string | null
           cover: string | null
           created_at: string
+          description: string | null
           duration: string | null
           featured: boolean
           id: string
+          is_new: boolean
           kind: string
+          logo: string | null
           published: boolean
+          published_at: string | null
+          show_on_home: boolean
           slug: string
           sort_order: number
+          status: string
           summary: string | null
           tags: string[]
+          thumbnail: string | null
           title: string
+          trailer_url: string | null
           updated_at: string
           verse: string | null
+          video_asset_id: string | null
+          video_source: string
+          video_url: string | null
+          views: number
+          year: number | null
         }
         Insert: {
           age_range?: string | null
+          banner?: string | null
+          classification?: string | null
           cover?: string | null
           created_at?: string
+          description?: string | null
           duration?: string | null
           featured?: boolean
           id?: string
+          is_new?: boolean
           kind?: string
+          logo?: string | null
           published?: boolean
+          published_at?: string | null
+          show_on_home?: boolean
           slug: string
           sort_order?: number
+          status?: string
           summary?: string | null
           tags?: string[]
+          thumbnail?: string | null
           title: string
+          trailer_url?: string | null
           updated_at?: string
           verse?: string | null
+          video_asset_id?: string | null
+          video_source?: string
+          video_url?: string | null
+          views?: number
+          year?: number | null
         }
         Update: {
           age_range?: string | null
+          banner?: string | null
+          classification?: string | null
           cover?: string | null
           created_at?: string
+          description?: string | null
           duration?: string | null
           featured?: boolean
           id?: string
+          is_new?: boolean
           kind?: string
+          logo?: string | null
           published?: boolean
+          published_at?: string | null
+          show_on_home?: boolean
           slug?: string
           sort_order?: number
+          status?: string
           summary?: string | null
           tags?: string[]
+          thumbnail?: string | null
           title?: string
+          trailer_url?: string | null
           updated_at?: string
           verse?: string | null
+          video_asset_id?: string | null
+          video_source?: string
+          video_url?: string | null
+          views?: number
+          year?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "titles_video_asset_id_fkey"
+            columns: ["video_asset_id"]
+            isOneToOne: false
+            referencedRelation: "media_assets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -424,6 +728,60 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      watch_progress: {
+        Row: {
+          completed: boolean
+          created_at: string
+          duration_seconds: number
+          episode_id: string | null
+          id: string
+          position_seconds: number
+          profile_key: string
+          title_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          duration_seconds?: number
+          episode_id?: string | null
+          id?: string
+          position_seconds?: number
+          profile_key?: string
+          title_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          duration_seconds?: number
+          episode_id?: string | null
+          id?: string
+          position_seconds?: number
+          profile_key?: string
+          title_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "watch_progress_episode_id_fkey"
+            columns: ["episode_id"]
+            isOneToOne: false
+            referencedRelation: "episodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "watch_progress_title_id_fkey"
+            columns: ["title_id"]
+            isOneToOne: false
+            referencedRelation: "titles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

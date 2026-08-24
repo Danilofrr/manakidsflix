@@ -13,6 +13,15 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as PerfisRouteImport } from './routes/perfis'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminAparenciaRouteImport } from './routes/admin.aparencia'
+import { Route as AdminCatalogoRouteImport } from './routes/admin.catalogo'
+import { Route as AdminCategoriasRouteImport } from './routes/admin.categorias'
+import { Route as AdminClientesRouteImport } from './routes/admin.clientes'
+import { Route as AdminDestaquesRouteImport } from './routes/admin.destaques'
+import { Route as AdminFileirasRouteImport } from './routes/admin.fileiras'
+import { Route as AdminMidiaRouteImport } from './routes/admin.midia'
+import { Route as AdminPlanosRouteImport } from './routes/admin.planos'
 import { Route as HistoriaSlugRouteImport } from './routes/historia.$slug'
 
 const IndexRoute = IndexRouteImport.update({
@@ -35,6 +44,51 @@ const PerfisRoute = PerfisRouteImport.update({
   path: '/perfis',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAparenciaRoute = AdminAparenciaRouteImport.update({
+  id: '/aparencia',
+  path: '/aparencia',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCatalogoRoute = AdminCatalogoRouteImport.update({
+  id: '/catalogo',
+  path: '/catalogo',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCategoriasRoute = AdminCategoriasRouteImport.update({
+  id: '/categorias',
+  path: '/categorias',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminClientesRoute = AdminClientesRouteImport.update({
+  id: '/clientes',
+  path: '/clientes',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminDestaquesRoute = AdminDestaquesRouteImport.update({
+  id: '/destaques',
+  path: '/destaques',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminFileirasRoute = AdminFileirasRouteImport.update({
+  id: '/fileiras',
+  path: '/fileiras',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminMidiaRoute = AdminMidiaRouteImport.update({
+  id: '/midia',
+  path: '/midia',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPlanosRoute = AdminPlanosRouteImport.update({
+  id: '/planos',
+  path: '/planos',
+  getParentRoute: () => AdminRoute,
+} as any)
 const HistoriaSlugRoute = HistoriaSlugRouteImport.update({
   id: '/historia/$slug',
   path: '/historia/$slug',
@@ -43,37 +97,105 @@ const HistoriaSlugRoute = HistoriaSlugRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/perfis': typeof PerfisRoute
+  '/admin/aparencia': typeof AdminAparenciaRoute
+  '/admin/catalogo': typeof AdminCatalogoRoute
+  '/admin/categorias': typeof AdminCategoriasRoute
+  '/admin/clientes': typeof AdminClientesRoute
+  '/admin/destaques': typeof AdminDestaquesRoute
+  '/admin/fileiras': typeof AdminFileirasRoute
+  '/admin/midia': typeof AdminMidiaRoute
+  '/admin/planos': typeof AdminPlanosRoute
   '/historia/$slug': typeof HistoriaSlugRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/perfis': typeof PerfisRoute
+  '/admin/aparencia': typeof AdminAparenciaRoute
+  '/admin/catalogo': typeof AdminCatalogoRoute
+  '/admin/categorias': typeof AdminCategoriasRoute
+  '/admin/clientes': typeof AdminClientesRoute
+  '/admin/destaques': typeof AdminDestaquesRoute
+  '/admin/fileiras': typeof AdminFileirasRoute
+  '/admin/midia': typeof AdminMidiaRoute
+  '/admin/planos': typeof AdminPlanosRoute
   '/historia/$slug': typeof HistoriaSlugRoute
+  '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/perfis': typeof PerfisRoute
+  '/admin/aparencia': typeof AdminAparenciaRoute
+  '/admin/catalogo': typeof AdminCatalogoRoute
+  '/admin/categorias': typeof AdminCategoriasRoute
+  '/admin/clientes': typeof AdminClientesRoute
+  '/admin/destaques': typeof AdminDestaquesRoute
+  '/admin/fileiras': typeof AdminFileirasRoute
+  '/admin/midia': typeof AdminMidiaRoute
+  '/admin/planos': typeof AdminPlanosRoute
   '/historia/$slug': typeof HistoriaSlugRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/auth' | '/perfis' | '/historia/$slug'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/auth'
+    | '/perfis'
+    | '/admin/aparencia'
+    | '/admin/catalogo'
+    | '/admin/categorias'
+    | '/admin/clientes'
+    | '/admin/destaques'
+    | '/admin/fileiras'
+    | '/admin/midia'
+    | '/admin/planos'
+    | '/historia/$slug'
+    | '/admin/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/auth' | '/perfis' | '/historia/$slug'
-  id: '__root__' | '/' | '/admin' | '/auth' | '/perfis' | '/historia/$slug'
+  to:
+    | '/'
+    | '/auth'
+    | '/perfis'
+    | '/admin/aparencia'
+    | '/admin/catalogo'
+    | '/admin/categorias'
+    | '/admin/clientes'
+    | '/admin/destaques'
+    | '/admin/fileiras'
+    | '/admin/midia'
+    | '/admin/planos'
+    | '/historia/$slug'
+    | '/admin'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/auth'
+    | '/perfis'
+    | '/admin/aparencia'
+    | '/admin/catalogo'
+    | '/admin/categorias'
+    | '/admin/clientes'
+    | '/admin/destaques'
+    | '/admin/fileiras'
+    | '/admin/midia'
+    | '/admin/planos'
+    | '/historia/$slug'
+    | '/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRoute: typeof AdminRoute
+  AdminRoute: typeof AdminRouteWithChildren
   AuthRoute: typeof AuthRoute
   PerfisRoute: typeof PerfisRoute
   HistoriaSlugRoute: typeof HistoriaSlugRoute
@@ -109,6 +231,69 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PerfisRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/aparencia': {
+      id: '/admin/aparencia'
+      path: '/aparencia'
+      fullPath: '/admin/aparencia'
+      preLoaderRoute: typeof AdminAparenciaRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/catalogo': {
+      id: '/admin/catalogo'
+      path: '/catalogo'
+      fullPath: '/admin/catalogo'
+      preLoaderRoute: typeof AdminCatalogoRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/categorias': {
+      id: '/admin/categorias'
+      path: '/categorias'
+      fullPath: '/admin/categorias'
+      preLoaderRoute: typeof AdminCategoriasRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/clientes': {
+      id: '/admin/clientes'
+      path: '/clientes'
+      fullPath: '/admin/clientes'
+      preLoaderRoute: typeof AdminClientesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/destaques': {
+      id: '/admin/destaques'
+      path: '/destaques'
+      fullPath: '/admin/destaques'
+      preLoaderRoute: typeof AdminDestaquesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/fileiras': {
+      id: '/admin/fileiras'
+      path: '/fileiras'
+      fullPath: '/admin/fileiras'
+      preLoaderRoute: typeof AdminFileirasRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/midia': {
+      id: '/admin/midia'
+      path: '/midia'
+      fullPath: '/admin/midia'
+      preLoaderRoute: typeof AdminMidiaRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/planos': {
+      id: '/admin/planos'
+      path: '/planos'
+      fullPath: '/admin/planos'
+      preLoaderRoute: typeof AdminPlanosRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/historia/$slug': {
       id: '/historia/$slug'
       path: '/historia/$slug'
@@ -119,9 +304,35 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminRouteChildren {
+  AdminAparenciaRoute: typeof AdminAparenciaRoute
+  AdminCatalogoRoute: typeof AdminCatalogoRoute
+  AdminCategoriasRoute: typeof AdminCategoriasRoute
+  AdminClientesRoute: typeof AdminClientesRoute
+  AdminDestaquesRoute: typeof AdminDestaquesRoute
+  AdminFileirasRoute: typeof AdminFileirasRoute
+  AdminMidiaRoute: typeof AdminMidiaRoute
+  AdminPlanosRoute: typeof AdminPlanosRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminAparenciaRoute: AdminAparenciaRoute,
+  AdminCatalogoRoute: AdminCatalogoRoute,
+  AdminCategoriasRoute: AdminCategoriasRoute,
+  AdminClientesRoute: AdminClientesRoute,
+  AdminDestaquesRoute: AdminDestaquesRoute,
+  AdminFileirasRoute: AdminFileirasRoute,
+  AdminMidiaRoute: AdminMidiaRoute,
+  AdminPlanosRoute: AdminPlanosRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRoute: AdminRoute,
+  AdminRoute: AdminRouteWithChildren,
   AuthRoute: AuthRoute,
   PerfisRoute: PerfisRoute,
   HistoriaSlugRoute: HistoriaSlugRoute,
