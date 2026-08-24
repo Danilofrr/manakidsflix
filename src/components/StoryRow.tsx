@@ -15,12 +15,15 @@ export function StoryRow({ title, subtitle, items }: Props) {
         {subtitle ? <p className="text-sm text-muted-foreground">{subtitle}</p> : null}
       </div>
       <div className="scrollbar-none mt-3 overflow-x-auto pb-3">
-        <div className="mx-auto flex w-max max-w-7xl gap-4 px-4 sm:px-6">
-          {items.map((story) => (
-            <StoryCard key={`${title}-${story.slug}`} story={story} />
-          ))}
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="flex w-max gap-4">
+            {items.map((story) => (
+              <StoryCard key={`${title}-${story.slug}`} story={story} />
+            ))}
+          </div>
         </div>
       </div>
+
     </section>
 
 
