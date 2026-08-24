@@ -10,12 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as PerfisRouteImport } from './routes/perfis'
 import { Route as HistoriaSlugRouteImport } from './routes/historia.$slug'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PerfisRoute = PerfisRouteImport.update({
@@ -31,30 +37,34 @@ const HistoriaSlugRoute = HistoriaSlugRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/perfis': typeof PerfisRoute
   '/historia/$slug': typeof HistoriaSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/perfis': typeof PerfisRoute
   '/historia/$slug': typeof HistoriaSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/perfis': typeof PerfisRoute
   '/historia/$slug': typeof HistoriaSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/perfis' | '/historia/$slug'
+  fullPaths: '/' | '/admin' | '/perfis' | '/historia/$slug'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/perfis' | '/historia/$slug'
-  id: '__root__' | '/' | '/perfis' | '/historia/$slug'
+  to: '/' | '/admin' | '/perfis' | '/historia/$slug'
+  id: '__root__' | '/' | '/admin' | '/perfis' | '/historia/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
   PerfisRoute: typeof PerfisRoute
   HistoriaSlugRoute: typeof HistoriaSlugRoute
 }
@@ -66,6 +76,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/perfis': {
@@ -87,6 +104,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
   PerfisRoute: PerfisRoute,
   HistoriaSlugRoute: HistoriaSlugRoute,
 }
