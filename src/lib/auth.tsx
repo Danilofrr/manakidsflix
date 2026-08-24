@@ -20,8 +20,9 @@ const AuthContext = createContext<AuthValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [role, setRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
+  const [roleLoading, setRoleLoading] = useState(true);
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
@@ -41,18 +42,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!userId) {
-      setIsAdmin(false);
+      setRole(null);
+      setRoleLoading(false);
       return;
     }
     let active = true;
+    setRoleLoading(true);
     supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", userId)
-      .eq("role", "admin")
-      .maybeSingle()
       .then(({ data }) => {
-        if (active) setIsAdmin(Boolean(data));
+        if (!active) return;
+        const roles = (data ?? []).map((r) => r.role as AppRole);
+        setRole(roles.includes("admin") ? "admin" : (roles[0] ?? "cliente"));
+        setRoleLoading(false);
       });
     return () => {
       active = false;
@@ -61,12 +65,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signOut() {
     await supabase.auth.signOut();
-    setIsAdmin(false);
+    setRole(null);
   }
 
   return (
     <AuthContext.Provider
-      value={{ session, user: session?.user ?? null, isAdmin, loading, signOut }}
+      value={{
+        session,
+        user: session?.user ?? null,
+        role,
+        isAdmin: role === "admin",
+        loading,
+        roleLoading,
+        signOut,
+      }}
     >
       {children}
     </AuthContext.Provider>
