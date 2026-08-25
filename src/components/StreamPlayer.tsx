@@ -42,6 +42,8 @@ export type StreamPlayerProps = {
   poster?: string;
   startAt?: number;
   subtitles?: SubtitleTrack[];
+  /** Pula a capa inicial quando o play já foi dado na página. */
+  autoStart?: boolean;
   onProgress?: (currentTime: number, duration: number) => void;
   onEnded?: () => void;
   onBack?: () => void;
@@ -65,6 +67,7 @@ export function StreamPlayer(props: StreamPlayerProps) {
     poster,
     startAt = 0,
     subtitles = [],
+    autoStart = false,
     onProgress,
     onEnded,
     onBack,
@@ -83,7 +86,7 @@ export function StreamPlayer(props: StreamPlayerProps) {
 
   const isYouTube = source === "youtube" && Boolean(youtubeId);
 
-  const [started, setStarted] = useState(false);
+  const [started, setStarted] = useState(autoStart);
   const [ready, setReady] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [current, setCurrent] = useState(0);

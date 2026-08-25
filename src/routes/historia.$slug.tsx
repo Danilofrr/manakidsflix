@@ -10,6 +10,7 @@ import { StreamPlayer } from "@/components/StreamPlayer";
 import { useAppStore } from "@/lib/app-store";
 import type { VideoSource } from "@/lib/youtube";
 import { COMPLETED_AT, getWatchProgress, saveWatchProgress } from "@/lib/watch-progress";
+import { loadEpisodeSubtitles, type SubtitleTrack } from "@/lib/subtitles";
 
 export const Route = createFileRoute("/historia/$slug")({
   head: ({ params }) => {
@@ -33,7 +34,9 @@ export const Route = createFileRoute("/historia/$slug")({
 type NowPlaying = {
   source: VideoSource;
   url: string;
+  hlsUrl: string;
   youtubeId: string;
+  subtitles: SubtitleTrack[];
   label: string;
   episodeId: string | null;
   startAt: number;
@@ -78,14 +81,40 @@ function StoryPage() {
   const firstEpisode = seasons[0]?.episodes.find((e) => e.published);
 
   /** Fonte do vídeo principal: YouTube do admin, arquivo próprio ou 1º episódio. */
-  const main: { source: VideoSource; url: string; youtubeId: string } | null = story
+  const main: {
+    source: VideoSource;
+    url: string;
+    hlsUrl: string;
+    youtubeId: string;
+    subtitles: SubtitleTrack[];
+  } | null = story
     ? story.videoSource === "youtube" && story.youtubeVideoId
-      ? { source: "youtube", url: "", youtubeId: story.youtubeVideoId }
-      : story.videoUrl
-        ? { source: "upload", url: story.videoUrl, youtubeId: "" }
-        : firstEpisode?.video_url
-          ? { source: "upload", url: firstEpisode.video_url, youtubeId: "" }
-          : null
+      ? { source: "youtube", url: "", hlsUrl: "", youtubeId: story.youtubeVideoId, subtitles: [] }
+      : story.videoSource === "external" && (story.hlsUrl || story.videoUrl)
+        ? {
+            source: "external",
+            url: story.videoUrl ?? "",
+            hlsUrl: story.hlsUrl ?? "",
+            youtubeId: "",
+            subtitles: story.subtitles ?? [],
+          }
+        : story.videoUrl
+          ? {
+              source: "upload",
+              url: story.videoUrl,
+              hlsUrl: "",
+              youtubeId: "",
+              subtitles: story.subtitles ?? [],
+            }
+          : firstEpisode?.video_url
+            ? {
+                source: "upload",
+                url: firstEpisode.video_url,
+                hlsUrl: "",
+                youtubeId: "",
+                subtitles: [],
+              }
+            : null
     : null;
 
   const handleProgress = useCallback(
@@ -148,7 +177,10 @@ function StoryPage() {
                 <StreamPlayer
                   source={playing.source}
                   url={playing.url}
+                  hlsUrl={playing.hlsUrl}
                   youtubeId={playing.youtubeId}
+                  subtitles={playing.subtitles}
+                  autoStart
                   title={playing.label}
                   poster={story.cover}
                   startAt={playing.startAt}
@@ -268,6 +300,7 @@ function StoryPage() {
                 {resumeAt > 5 ? "Continuar" : "Assistir"}
               </Button>
               {(story.trailerSource === "youtube" && story.trailerYoutubeId) ||
+              story.trailerHlsUrl ||
               story.trailerUrl ? (
                 <Button
                   variant="bubble"
@@ -275,8 +308,10 @@ function StoryPage() {
                   onClick={() => {
                     setFinished(false);
                     setPlaying({
-                      source: story.trailerSource === "youtube" ? "youtube" : "upload",
+                      source: story.trailerSource ?? "upload",
                       url: story.trailerUrl ?? "",
+                      hlsUrl: story.trailerHlsUrl ?? "",
+                      subtitles: story.trailerSubtitles ?? [],
                       youtubeId: story.trailerYoutubeId ?? "",
                       label: `${story.title} · Trailer`,
                       episodeId: null,
@@ -313,9 +348,14 @@ function StoryPage() {
                             onClick={() => {
                               if (!ep.video_url) return;
                               setFinished(false);
+                              void loadEpisodeSubtitles(ep.id).then((subs) =>
+                                setPlaying((p) => (p ? { ...p, subtitles: subs } : p)),
+                              );
                               setPlaying({
-                                source: "upload",
+                                source: ep.hls_url ? "external" : "upload",
                                 url: ep.video_url,
+                                hlsUrl: ep.hls_url ?? "",
+                                subtitles: [],
                                 youtubeId: "",
                                 label: `${ep.number}. ${ep.name}`,
                                 episodeId: ep.id,
