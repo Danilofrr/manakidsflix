@@ -104,16 +104,27 @@ export async function saveWatchProgress(args: {
   const user = auth.user;
   if (!user || !titleId) return;
 
-  await supabase.from("watch_progress").upsert(
-    {
-      user_id: user.id,
-      title_id: titleId,
-      episode_id: episodeId,
-      position_seconds: Math.floor(currentTime),
-      duration_seconds: Math.floor(duration),
-      completed,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "user_id,title_id,episode_id" },
-  );
+  const values = {
+    position_seconds: Math.floor(currentTime),
+    duration_seconds: Math.floor(duration),
+    completed,
+    updated_at: new Date().toISOString(),
+  };
+
+  // episode_id pode ser nulo, então o upsert por chave única não serve aqui.
+  let find = supabase
+    .from("watch_progress")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("title_id", titleId);
+  find = episodeId ? find.eq("episode_id", episodeId) : find.is("episode_id", null);
+  const { data: existing } = await find.maybeSingle();
+
+  if (existing) {
+    await supabase.from("watch_progress").update(values).eq("id", existing.id);
+  } else {
+    await supabase
+      .from("watch_progress")
+      .insert({ user_id: user.id, title_id: titleId, episode_id: episodeId, ...values });
+  }
 }
