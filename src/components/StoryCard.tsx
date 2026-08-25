@@ -7,17 +7,18 @@ export function StoryCard({ story }: { story: Story }) {
     <Link
       to="/historia/$slug"
       params={{ slug: story.slug }}
-      className="group block w-40 shrink-0 sm:w-48 md:w-52"
+      className="group block w-64 shrink-0 sm:w-72 md:w-80"
     >
-      <div className="relative overflow-hidden rounded-3xl border-2 border-border/70 bg-card shadow-card transition-transform duration-300 group-hover:-translate-y-1.5 group-hover:border-secondary">
+      <div className="relative overflow-hidden rounded-2xl border-2 border-border/70 bg-card shadow-card transition-transform duration-300 group-hover:-translate-y-1.5 group-hover:border-secondary">
         <img
           src={story.cover}
           alt={`Capa da história ${story.title}`}
           loading="lazy"
-          width={768}
-          height={1024}
-          className="aspect-[3/4] w-full object-cover"
+          width={1280}
+          height={720}
+          className="aspect-video w-full object-cover"
         />
+
 
         {story.progress ? (
           <div className="absolute inset-x-3 bottom-3 h-1.5 overflow-hidden rounded-full bg-primary-foreground/30">
