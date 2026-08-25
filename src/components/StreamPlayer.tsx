@@ -188,7 +188,7 @@ export function StreamPlayer(props: StreamPlayerProps) {
     if (!video || !src) return;
 
     let destroy: (() => void) | undefined;
-    const isHls = /\.m3u8(\?|$)/i.test(src);
+    const isHls = Boolean(hlsUrl) || /\.m3u8(\?|$)/i.test(src);
 
     if (isHls && !video.canPlayType("application/vnd.apple.mpegurl")) {
       void import("hls.js").then(({ default: Hls }) => {
@@ -450,7 +450,7 @@ export function StreamPlayer(props: StreamPlayerProps) {
         ) : null}
 
         {/* clique/toque no vídeo controla play-pause */}
-        {started ? (
+        {started && !isYouTube ? (
           <button
             type="button"
             aria-label={playing ? "Pausar" : "Reproduzir"}

@@ -100,7 +100,7 @@ function StoryPage() {
           }
         : story.videoUrl
           ? {
-              source: "upload",
+              source: "mana_kids",
               url: story.videoUrl,
               hlsUrl: "",
               youtubeId: "",
