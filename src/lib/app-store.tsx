@@ -47,11 +47,22 @@ export type Profile = { id: string; name: string; color: string; emoji: string; 
 /** Limite de telas por conta, como na Netflix. */
 export const MAX_PROFILES = 3;
 
+export type FooterLink = { id: string; label: string; url: string };
+export type FooterColumn = { id: string; title: string; links: FooterLink[] };
+export type SocialKey = "instagram" | "youtube" | "facebook" | "tiktok" | "whatsapp";
+/** Rede social só aparece no rodapé quando tem link preenchido. */
+export type Socials = Record<SocialKey, string>;
+
 export type Texts = {
   safetyTitle: string;
   safetyBody: string;
   footer: string;
+  footerBrand: string;
+  footerCopyright: string;
+  footerColumns: FooterColumn[];
+  socials: Socials;
 };
+
 
 export type AppState = {
   stories: Story[];
