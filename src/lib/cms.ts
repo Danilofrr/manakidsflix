@@ -101,11 +101,13 @@ export async function loadCms(): Promise<CmsData | null> {
       ? "youtube"
       : t.video_source === "external"
         ? "external"
-        : "upload") as VideoSource,
+        : "mana_kids") as VideoSource,
     ...(t.hls_url ? { hlsUrl: t.hls_url } : {}),
-    ...(t.external_video_id ? { externalVideoId: t.external_video_id } : {}),
+    ...(t.video_provider ? { videoProvider: t.video_provider } : {}),
+    ...(t.provider_video_id ? { providerVideoId: t.provider_video_id } : {}),
     ...(t.trailer_hls_url ? { trailerHlsUrl: t.trailer_hls_url } : {}),
-    ...(t.trailer_external_id ? { trailerExternalId: t.trailer_external_id } : {}),
+    ...(t.trailer_video_provider ? { trailerVideoProvider: t.trailer_video_provider } : {}),
+    ...(t.trailer_provider_video_id ? { trailerProviderVideoId: t.trailer_provider_video_id } : {}),
     subtitles: subtitlesFor(t.id, "main"),
     trailerSubtitles: subtitlesFor(t.id, "trailer"),
     ...(t.youtube_url ? { youtubeUrl: t.youtube_url } : {}),
@@ -114,7 +116,7 @@ export async function loadCms(): Promise<CmsData | null> {
       ? "youtube"
       : t.trailer_source === "external"
         ? "external"
-        : "upload") as VideoSource,
+        : "mana_kids") as VideoSource,
     ...(t.trailer_youtube_url ? { trailerYoutubeUrl: t.trailer_youtube_url } : {}),
     ...(t.trailer_youtube_id ? { trailerYoutubeId: t.trailer_youtube_id } : {}),
     ...(progress[t.slug] ? { progress: progress[t.slug] } : {}),
@@ -193,16 +195,18 @@ export async function saveCms(state: AppState): Promise<void> {
     tags: s.tags,
     video_url: s.videoUrl ? urlToAsset(s.videoUrl) : null,
     trailer_url: s.trailerUrl ? urlToAsset(s.trailerUrl) : null,
-    video_source: s.videoSource ?? "upload",
+    video_source: s.videoSource ?? "mana_kids",
     youtube_url: s.youtubeUrl ?? null,
     youtube_video_id: s.youtubeVideoId ?? null,
     hls_url: s.hlsUrl ?? null,
-    external_video_id: s.externalVideoId ?? null,
-    trailer_source: s.trailerSource ?? "upload",
+    video_provider: s.videoProvider ?? null,
+    provider_video_id: s.providerVideoId ?? null,
+    trailer_source: s.trailerSource ?? "mana_kids",
     trailer_youtube_url: s.trailerYoutubeUrl ?? null,
     trailer_youtube_id: s.trailerYoutubeId ?? null,
     trailer_hls_url: s.trailerHlsUrl ?? null,
-    trailer_external_id: s.trailerExternalId ?? null,
+    trailer_video_provider: s.trailerVideoProvider ?? null,
+    trailer_provider_video_id: s.trailerProviderVideoId ?? null,
     sort_order: index,
   }));
   if (titlePayload.length) {

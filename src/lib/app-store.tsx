@@ -7,7 +7,7 @@ import type { SubtitleTrack } from "@/lib/subtitles";
 
 export type Kind = "filme" | "serie";
 
-export type VideoSource = "upload" | "youtube" | "external";
+export type VideoSource = "mana_kids" | "youtube" | "external";
 
 export type Story = {
   slug: string;
@@ -31,9 +31,11 @@ export type Story = {
   trailerYoutubeId?: string;
   /** Streaming externo (HLS/MP4 hospedado fora da biblioteca). */
   hlsUrl?: string;
-  externalVideoId?: string;
+  videoProvider?: string;
+  providerVideoId?: string;
   trailerHlsUrl?: string;
-  trailerExternalId?: string;
+  trailerVideoProvider?: string;
+  trailerProviderVideoId?: string;
   /** Legendas cadastradas no painel para o vídeo principal. */
   subtitles?: SubtitleTrack[];
   trailerSubtitles?: SubtitleTrack[];

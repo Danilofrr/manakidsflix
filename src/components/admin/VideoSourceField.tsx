@@ -22,7 +22,8 @@ export type VideoSourceValue = {
   youtubeId: string;
   /** Playlist HLS (.m3u8) de Bunny, Cloudflare Stream, Mux etc. */
   hlsUrl: string;
-  externalId: string;
+  provider: string;
+  providerVideoId: string;
   subtitles: SubtitleTrack[];
 };
 
@@ -50,7 +51,7 @@ export function VideoSourceField({
         {(
           [
             { key: "youtube", icon: Youtube, text: "YouTube" },
-            { key: "upload", icon: Library, text: "Biblioteca da Maná Kids" },
+            { key: "mana_kids", icon: Library, text: "Biblioteca Maná Kids" },
             { key: "external", icon: Cloud, text: "Streaming externo" },
           ] as const
         ).map(({ key, icon: Icon, text }) => (
@@ -131,7 +132,7 @@ export function VideoSourceField({
       ) : value.source === "external" ? (
         <div className="mt-3 space-y-3">
           <div>
-            <Label htmlFor={`hls-${label}`}>Link HLS (.m3u8)</Label>
+            <Label htmlFor={`hls-${label}`}>URL HLS (.m3u8) — preferencial</Label>
             <Input
               id={`hls-${label}`}
               value={value.hlsUrl}
@@ -139,11 +140,11 @@ export function VideoSourceField({
               onChange={(e) => onChange({ ...value, hlsUrl: e.target.value })}
             />
             <p className="mt-1 text-xs text-muted-foreground">
-              Compatível com Bunny Stream, Cloudflare Stream, Mux e outros serviços.
+              Use a playlist HLS do Bunny Stream, Cloudflare Stream, Mux ou outro provedor.
             </p>
           </div>
           <div>
-            <Label htmlFor={`mp4-${label}`}>Ou link MP4 direto</Label>
+            <Label htmlFor={`mp4-${label}`}>URL MP4 (alternativa)</Label>
             <Input
               id={`mp4-${label}`}
               value={value.url}
@@ -152,11 +153,20 @@ export function VideoSourceField({
             />
           </div>
           <div>
-            <Label htmlFor={`ext-${label}`}>Identificador no serviço (opcional)</Label>
+            <Label htmlFor={`provider-${label}`}>Provedor</Label>
+            <Input
+              id={`provider-${label}`}
+              value={value.provider}
+              placeholder="Bunny Stream, Cloudflare Stream, Mux ou outro"
+              onChange={(e) => onChange({ ...value, provider: e.target.value })}
+            />
+          </div>
+          <div>
+            <Label htmlFor={`ext-${label}`}>ID do vídeo no provedor (opcional)</Label>
             <Input
               id={`ext-${label}`}
-              value={value.externalId}
-              onChange={(e) => onChange({ ...value, externalId: e.target.value })}
+              value={value.providerVideoId}
+              onChange={(e) => onChange({ ...value, providerVideoId: e.target.value })}
             />
           </div>
           <SubtitlesField

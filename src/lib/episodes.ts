@@ -17,6 +17,11 @@ export type Episode = {
   summary: string | null;
   video_url: string | null;
   hls_url: string | null;
+  video_source: "youtube" | "mana_kids" | "external";
+  youtube_url: string | null;
+  youtube_video_id: string | null;
+  video_provider: string | null;
+  provider_video_id: string | null;
   published: boolean;
   sort_order: number;
 };
@@ -35,7 +40,7 @@ export async function listEpisodes(seasonIds: string[]) {
   if (seasonIds.length === 0) return [] as Episode[];
   const { data, error } = await supabase
     .from("episodes")
-    .select("id, season_id, number, name, duration, cover, summary, video_url, hls_url, published, sort_order")
+    .select("id, season_id, number, name, duration, cover, summary, video_url, hls_url, video_source, youtube_url, youtube_video_id, video_provider, provider_video_id, published, sort_order")
     .in("season_id", seasonIds)
     .order("number", { ascending: true });
   if (error) throw new Error(error.message);
@@ -75,8 +80,8 @@ export async function deleteSeason(id: string) {
 export async function createEpisode(seasonId: string, number: number) {
   const { data, error } = await supabase
     .from("episodes")
-    .insert({ season_id: seasonId, number, name: `Episódio ${number}`, sort_order: number })
-    .select("id, season_id, number, name, duration, cover, summary, video_url, hls_url, published, sort_order")
+    .insert({ season_id: seasonId, number, name: `Episódio ${number}`, sort_order: number, video_source: "mana_kids" })
+    .select("id, season_id, number, name, duration, cover, summary, video_url, hls_url, video_source, youtube_url, youtube_video_id, video_provider, provider_video_id, published, sort_order")
     .single();
   if (error) throw new Error(error.message);
   return data as Episode;
@@ -92,6 +97,12 @@ export async function saveEpisode(ep: Episode) {
       cover: ep.cover,
       summary: ep.summary,
       video_url: ep.video_url,
+      hls_url: ep.hls_url,
+      video_source: ep.video_source,
+      youtube_url: ep.youtube_url,
+      youtube_video_id: ep.youtube_video_id,
+      video_provider: ep.video_provider,
+      provider_video_id: ep.provider_video_id,
       published: ep.published,
       sort_order: ep.number,
     })

@@ -164,12 +164,13 @@ export function CatalogTab() {
                   label="Vídeo principal"
                   folder="videos"
                   value={{
-                    source: draft.videoSource ?? "upload",
+                    source: draft.videoSource ?? "mana_kids",
                     url: draft.videoUrl ?? "",
                     youtubeUrl: draft.youtubeUrl ?? "",
                     youtubeId: draft.youtubeVideoId ?? "",
                     hlsUrl: draft.hlsUrl ?? "",
-                    externalId: draft.externalVideoId ?? "",
+                    provider: draft.videoProvider ?? "",
+                    providerVideoId: draft.providerVideoId ?? "",
                     subtitles: draft.subtitles ?? [],
                   }}
                   onChange={(v) =>
@@ -180,7 +181,8 @@ export function CatalogTab() {
                       youtubeUrl: v.youtubeUrl,
                       youtubeVideoId: v.youtubeId,
                       hlsUrl: v.hlsUrl,
-                      externalVideoId: v.externalId,
+                      videoProvider: v.provider,
+                      providerVideoId: v.providerVideoId,
                       subtitles: v.subtitles,
                     })
                   }
@@ -190,12 +192,13 @@ export function CatalogTab() {
                   label="Trailer (opcional)"
                   folder="trailers"
                   value={{
-                    source: draft.trailerSource ?? "upload",
+                    source: draft.trailerSource ?? "mana_kids",
                     url: draft.trailerUrl ?? "",
                     youtubeUrl: draft.trailerYoutubeUrl ?? "",
                     youtubeId: draft.trailerYoutubeId ?? "",
                     hlsUrl: draft.trailerHlsUrl ?? "",
-                    externalId: draft.trailerExternalId ?? "",
+                    provider: draft.trailerVideoProvider ?? "",
+                    providerVideoId: draft.trailerProviderVideoId ?? "",
                     subtitles: draft.trailerSubtitles ?? [],
                   }}
                   onChange={(v) =>
@@ -206,7 +209,8 @@ export function CatalogTab() {
                       trailerYoutubeUrl: v.youtubeUrl,
                       trailerYoutubeId: v.youtubeId,
                       trailerHlsUrl: v.hlsUrl,
-                      trailerExternalId: v.externalId,
+                      trailerVideoProvider: v.provider,
+                      trailerProviderVideoId: v.providerVideoId,
                       trailerSubtitles: v.subtitles,
                     })
                   }

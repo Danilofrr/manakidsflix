@@ -107,6 +107,7 @@ export type Database = {
           id: string
           name: string
           number: number
+          provider_video_id: string | null
           published: boolean
           release_date: string | null
           season_id: string
@@ -115,6 +116,7 @@ export type Database = {
           summary: string | null
           updated_at: string
           video_asset_id: string | null
+          video_provider: string | null
           video_source: string
           video_url: string | null
           views: number
@@ -130,6 +132,7 @@ export type Database = {
           id?: string
           name: string
           number?: number
+          provider_video_id?: string | null
           published?: boolean
           release_date?: string | null
           season_id: string
@@ -138,6 +141,7 @@ export type Database = {
           summary?: string | null
           updated_at?: string
           video_asset_id?: string | null
+          video_provider?: string | null
           video_source?: string
           video_url?: string | null
           views?: number
@@ -153,6 +157,7 @@ export type Database = {
           id?: string
           name?: string
           number?: number
+          provider_video_id?: string | null
           published?: boolean
           release_date?: string | null
           season_id?: string
@@ -161,6 +166,7 @@ export type Database = {
           summary?: string | null
           updated_at?: string
           video_asset_id?: string | null
+          video_provider?: string | null
           video_source?: string
           video_url?: string | null
           views?: number
@@ -627,6 +633,7 @@ export type Database = {
           is_new: boolean
           kind: string
           logo: string | null
+          provider_video_id: string | null
           published: boolean
           published_at: string | null
           show_on_home: boolean
@@ -639,13 +646,16 @@ export type Database = {
           title: string
           trailer_external_id: string | null
           trailer_hls_url: string | null
+          trailer_provider_video_id: string | null
           trailer_source: string
           trailer_url: string | null
+          trailer_video_provider: string | null
           trailer_youtube_id: string | null
           trailer_youtube_url: string | null
           updated_at: string
           verse: string | null
           video_asset_id: string | null
+          video_provider: string | null
           video_source: string
           video_url: string | null
           views: number
@@ -669,6 +679,7 @@ export type Database = {
           is_new?: boolean
           kind?: string
           logo?: string | null
+          provider_video_id?: string | null
           published?: boolean
           published_at?: string | null
           show_on_home?: boolean
@@ -681,13 +692,16 @@ export type Database = {
           title: string
           trailer_external_id?: string | null
           trailer_hls_url?: string | null
+          trailer_provider_video_id?: string | null
           trailer_source?: string
           trailer_url?: string | null
+          trailer_video_provider?: string | null
           trailer_youtube_id?: string | null
           trailer_youtube_url?: string | null
           updated_at?: string
           verse?: string | null
           video_asset_id?: string | null
+          video_provider?: string | null
           video_source?: string
           video_url?: string | null
           views?: number
@@ -711,6 +725,7 @@ export type Database = {
           is_new?: boolean
           kind?: string
           logo?: string | null
+          provider_video_id?: string | null
           published?: boolean
           published_at?: string | null
           show_on_home?: boolean
@@ -723,13 +738,16 @@ export type Database = {
           title?: string
           trailer_external_id?: string | null
           trailer_hls_url?: string | null
+          trailer_provider_video_id?: string | null
           trailer_source?: string
           trailer_url?: string | null
+          trailer_video_provider?: string | null
           trailer_youtube_id?: string | null
           trailer_youtube_url?: string | null
           updated_at?: string
           verse?: string | null
           video_asset_id?: string | null
+          video_provider?: string | null
           video_source?: string
           video_url?: string | null
           views?: number
@@ -887,13 +905,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
+      [_ in never]: never
     }
     Enums: {
       app_role: "admin" | "cliente"

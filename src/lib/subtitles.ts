@@ -129,6 +129,25 @@ export async function loadEpisodeSubtitles(episodeId: string): Promise<SubtitleT
   return (data ?? []).map((r) => toTrack(r as Row));
 }
 
+/** Reescreve as legendas de um episódio no banco (usado pelo admin). */
+export async function saveEpisodeSubtitles(episodeId: string, tracks: SubtitleTrack[]) {
+  await supabase.from("video_subtitles").delete().eq("episode_id", episodeId);
+  const valid = tracks.filter((track) => track.languageCode && track.url);
+  if (!valid.length) return;
+  await supabase.from("video_subtitles").insert(
+    valid.map((track, index) => ({
+      episode_id: episodeId,
+      kind: "main",
+      language_code: track.languageCode,
+      language_name: track.languageName,
+      subtitle_url: track.url,
+      format: track.format,
+      is_default: track.isDefault,
+      sort_order: index,
+    })),
+  );
+}
+
 /** Reescreve as legendas de um título no banco (usado pelo admin). */
 export async function saveTitleSubtitles(
   titleId: string,
