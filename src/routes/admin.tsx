@@ -12,6 +12,8 @@ import {
   Users,
   CreditCard,
   Palette,
+  PanelBottom,
+
   Menu,
   X,
   Moon,
