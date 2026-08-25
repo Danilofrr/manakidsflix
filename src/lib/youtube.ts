@@ -1,6 +1,6 @@
 /** Utilitários para reconhecer vídeos do YouTube colados pelo admin. */
 
-export type VideoSource = "upload" | "youtube";
+export type VideoSource = "upload" | "youtube" | "external";
 
 /** Extrai o ID de qualquer formato comum de URL do YouTube (ou do próprio ID). */
 export function parseYouTubeId(input: string | null | undefined): string | null {

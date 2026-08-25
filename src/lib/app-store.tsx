@@ -3,10 +3,11 @@ import { stories as defaultStories, rows as defaultRows, categories as defaultCa
 import heroImage from "@/assets/hero-mana.jpg";
 import { loadCms, loadSettings, saveCms } from "@/lib/cms";
 import { useAuth } from "@/lib/auth";
+import type { SubtitleTrack } from "@/lib/subtitles";
 
 export type Kind = "filme" | "serie";
 
-export type VideoSource = "upload" | "youtube";
+export type VideoSource = "upload" | "youtube" | "external";
 
 export type Story = {
   slug: string;
@@ -28,6 +29,14 @@ export type Story = {
   trailerSource?: VideoSource;
   trailerYoutubeUrl?: string;
   trailerYoutubeId?: string;
+  /** Streaming externo (HLS/MP4 hospedado fora da biblioteca). */
+  hlsUrl?: string;
+  externalVideoId?: string;
+  trailerHlsUrl?: string;
+  trailerExternalId?: string;
+  /** Legendas cadastradas no painel para o vídeo principal. */
+  subtitles?: SubtitleTrack[];
+  trailerSubtitles?: SubtitleTrack[];
 };
 
 export type Row = { id: string; title: string; subtitle: string; slugs: string[] };
