@@ -116,6 +116,8 @@ export type Database = {
           video_source: string
           video_url: string | null
           views: number
+          youtube_url: string | null
+          youtube_video_id: string | null
         }
         Insert: {
           cover?: string | null
@@ -135,6 +137,8 @@ export type Database = {
           video_source?: string
           video_url?: string | null
           views?: number
+          youtube_url?: string | null
+          youtube_video_id?: string | null
         }
         Update: {
           cover?: string | null
@@ -154,6 +158,8 @@ export type Database = {
           video_source?: string
           video_url?: string | null
           views?: number
+          youtube_url?: string | null
+          youtube_video_id?: string | null
         }
         Relationships: [
           {
@@ -622,7 +628,10 @@ export type Database = {
           tags: string[]
           thumbnail: string | null
           title: string
+          trailer_source: string
           trailer_url: string | null
+          trailer_youtube_id: string | null
+          trailer_youtube_url: string | null
           updated_at: string
           verse: string | null
           video_asset_id: string | null
@@ -630,6 +639,8 @@ export type Database = {
           video_url: string | null
           views: number
           year: number | null
+          youtube_url: string | null
+          youtube_video_id: string | null
         }
         Insert: {
           age_range?: string | null
@@ -654,7 +665,10 @@ export type Database = {
           tags?: string[]
           thumbnail?: string | null
           title: string
+          trailer_source?: string
           trailer_url?: string | null
+          trailer_youtube_id?: string | null
+          trailer_youtube_url?: string | null
           updated_at?: string
           verse?: string | null
           video_asset_id?: string | null
@@ -662,6 +676,8 @@ export type Database = {
           video_url?: string | null
           views?: number
           year?: number | null
+          youtube_url?: string | null
+          youtube_video_id?: string | null
         }
         Update: {
           age_range?: string | null
@@ -686,7 +702,10 @@ export type Database = {
           tags?: string[]
           thumbnail?: string | null
           title?: string
+          trailer_source?: string
           trailer_url?: string | null
+          trailer_youtube_id?: string | null
+          trailer_youtube_url?: string | null
           updated_at?: string
           verse?: string | null
           video_asset_id?: string | null
@@ -694,6 +713,8 @@ export type Database = {
           video_url?: string | null
           views?: number
           year?: number | null
+          youtube_url?: string | null
+          youtube_video_id?: string | null
         }
         Relationships: [
           {
