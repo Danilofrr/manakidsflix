@@ -252,7 +252,18 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         ...prev,
         ...(cms ?? {}),
         ...(settings?.brand ? { brand: settings.brand as AppState["brand"] } : {}),
-        ...(settings?.texts ? { texts: settings.texts as AppState["texts"] } : {}),
+        ...(settings?.texts
+          ? {
+              texts: {
+                ...defaultState.texts,
+                ...(settings.texts as Partial<AppState["texts"]>),
+                socials: {
+                  ...defaultState.texts.socials,
+                  ...((settings.texts as Partial<AppState["texts"]>).socials ?? {}),
+                },
+              },
+            }
+          : {}),
         ...(local.profiles ? { profiles: local.profiles } : {}),
         ...(local.activeProfileId ? { activeProfileId: local.activeProfileId } : {}),
       }));
