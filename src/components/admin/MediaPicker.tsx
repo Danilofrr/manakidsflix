@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { ImagePlus, Loader2, Upload } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Film, ImagePlus, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +10,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { listMedia, uploadMedia, type MediaAsset, type MediaKind } from "@/lib/media";
+import { UploadQueueList, useUploadQueue } from "@/components/admin/UploadQueue";
+import { listMedia, formatBytes, formatDuration, type MediaAsset, type MediaKind } from "@/lib/media";
+
 
 export function MediaPicker({
   label,
@@ -80,50 +82,43 @@ export function MediaBrowser({
 }) {
   const [assets, setAssets] = useState<MediaAsset[]>([]);
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function refresh() {
+  const refresh = useCallback(async () => {
     setLoading(true);
     try {
       setAssets(await listMedia(kind));
+      setError(null);
     } catch (e) {
       setError((e as Error).message);
     }
     setLoading(false);
-  }
+  }, [kind]);
+
+  const queue = useUploadQueue((asset) => setAssets((prev) => [asset, ...prev]));
 
   useEffect(() => {
     void refresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kind]);
-
-  async function handleFiles(files: FileList | null) {
-    if (!files?.length) return;
-    setBusy(true);
-    setError(null);
-    try {
-      for (const file of Array.from(files)) await uploadMedia(file, folder);
-      await refresh();
-    } catch (e) {
-      setError((e as Error).message);
-    }
-    setBusy(false);
-  }
+  }, [refresh]);
 
   return (
     <div>
       <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border/70 px-4 py-6 font-display text-sm text-muted-foreground hover:border-primary hover:text-foreground">
-        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-        {busy ? "Enviando…" : "Enviar novo arquivo"}
+        <Upload className="h-4 w-4" />
+        Enviar novo arquivo
         <input
           type="file"
           multiple
           className="hidden"
           accept={kind === "video" ? "video/*" : "image/*"}
-          onChange={(e) => void handleFiles(e.target.files)}
+          onChange={(e) => {
+            queue.enqueue(e.target.files ?? [], folder);
+            e.target.value = "";
+          }}
         />
       </label>
+
+      <UploadQueueList items={queue.items} onDismiss={queue.dismiss} onRetry={queue.retry} />
 
       {error && <p className="mt-3 text-sm font-semibold text-destructive">{error}</p>}
 
@@ -139,10 +134,23 @@ export function MediaBrowser({
             >
               {a.kind === "image" ? (
                 <img src={a.url} alt={a.name} className="h-24 w-full object-cover" loading="lazy" />
+              ) : a.thumbnail_url ? (
+                <img
+                  src={a.thumbnail_url}
+                  alt={a.name}
+                  className="h-24 w-full object-cover"
+                  loading="lazy"
+                />
               ) : (
-                <video src={a.url} className="h-24 w-full object-cover" muted />
+                <div className="flex h-24 w-full items-center justify-center bg-muted">
+                  <Film className="h-6 w-6 text-muted-foreground" />
+                </div>
               )}
-              <p className="truncate px-2 py-1.5 text-[11px] text-muted-foreground">{a.name}</p>
+              <p className="truncate px-2 pt-1.5 text-[11px] text-muted-foreground">{a.name}</p>
+              <p className="truncate px-2 pb-1.5 text-[10px] text-muted-foreground">
+                {formatBytes(a.size_bytes)}
+                {a.kind === "video" ? ` · ${formatDuration(a.duration_seconds)}` : ""}
+              </p>
             </button>
           ))}
           {assets.length === 0 && (
@@ -155,3 +163,4 @@ export function MediaBrowser({
     </div>
   );
 }
+
