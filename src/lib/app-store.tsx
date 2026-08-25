@@ -117,6 +117,53 @@ export const defaultState: AppState = {
     safetyBody:
       "Sem anúncios, sem links externos e com controle de tempo de tela. Os pais escolhem, as crianças se divertem.",
     footer: "Maná Kids+ · histórias bíblicas animadas para os pequenos",
+    footerBrand: "Maná Kids+",
+    footerCopyright: "Todos os direitos reservados.",
+    footerColumns: [
+      {
+        id: "col-mana",
+        title: "Maná Kids+",
+        links: [
+          { id: "l1", label: "Início", url: "/" },
+          { id: "l2", label: "Perfis", url: "/perfis" },
+          { id: "l3", label: "Minha lista", url: "" },
+        ],
+      },
+      {
+        id: "col-familias",
+        title: "Famílias",
+        links: [
+          { id: "l4", label: "Controle dos pais", url: "" },
+          { id: "l5", label: "Modo criança", url: "" },
+          { id: "l6", label: "Tempo de tela", url: "" },
+        ],
+      },
+      {
+        id: "col-ajuda",
+        title: "Ajuda",
+        links: [
+          { id: "l7", label: "Central de ajuda", url: "" },
+          { id: "l8", label: "Fale com a gente", url: "" },
+          { id: "l9", label: "Conta", url: "/auth" },
+        ],
+      },
+      {
+        id: "col-legal",
+        title: "Legal",
+        links: [
+          { id: "l10", label: "Termos de uso", url: "" },
+          { id: "l11", label: "Privacidade", url: "" },
+          { id: "l12", label: "Cookies", url: "" },
+        ],
+      },
+    ],
+    socials: {
+      instagram: "",
+      youtube: "",
+      facebook: "",
+      tiktok: "",
+      whatsapp: "",
+    },
   },
 };
 
