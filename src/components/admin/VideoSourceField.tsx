@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CheckCircle2, Eye, Library, Youtube } from "lucide-react";
+import { CheckCircle2, Cloud, Eye, Library, Youtube } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -10,17 +10,23 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { MediaPicker } from "@/components/admin/MediaPicker";
+import { SubtitlesField } from "@/components/admin/SubtitlesField";
 import { parseYouTubeId, youtubeThumbnail, type VideoSource } from "@/lib/youtube";
+import type { SubtitleTrack } from "@/lib/subtitles";
 
 export type VideoSourceValue = {
   source: VideoSource;
-  /** URL do arquivo da biblioteca. */
+  /** URL do arquivo da biblioteca ou MP4 externo. */
   url: string;
   youtubeUrl: string;
   youtubeId: string;
+  /** Playlist HLS (.m3u8) de Bunny, Cloudflare Stream, Mux etc. */
+  hlsUrl: string;
+  externalId: string;
+  subtitles: SubtitleTrack[];
 };
 
-/** Campo de vídeo com duas fontes: YouTube ou biblioteca da Maná Kids. */
+/** Campo de vídeo com três fontes: YouTube, biblioteca Maná Kids ou streaming externo. */
 export function VideoSourceField({
   label,
   folder,
@@ -40,11 +46,12 @@ export function VideoSourceField({
     <div className="rounded-2xl border-2 border-border/70 p-3">
       <Label>{label}</Label>
 
-      <div className="mt-2 flex gap-2">
+      <div className="mt-2 flex flex-wrap gap-2">
         {(
           [
             { key: "youtube", icon: Youtube, text: "YouTube" },
             { key: "upload", icon: Library, text: "Biblioteca da Maná Kids" },
+            { key: "external", icon: Cloud, text: "Streaming externo" },
           ] as const
         ).map(({ key, icon: Icon, text }) => (
           <button
@@ -76,8 +83,7 @@ export function VideoSourceField({
 
           {typed && !detected ? (
             <p className="mt-2 text-sm font-semibold text-destructive">
-              Não foi possível identificar este vídeo do YouTube. Verifique o link e tente
-              novamente.
+              Não foi possível identificar este vídeo. Verifique o link e tente novamente.
             </p>
           ) : null}
 
@@ -93,6 +99,9 @@ export function VideoSourceField({
                 <span className="flex items-center gap-1.5 text-foreground">
                   <CheckCircle2 className="h-4 w-4 text-secondary" />
                   Vídeo identificado
+                </span>
+                <span className="mt-1 block">
+                  As legendas vêm do próprio vídeo, quando existirem.
                 </span>
               </p>
               <Button type="button" variant="outline" size="sm" onClick={() => setPreview(true)}>
@@ -119,6 +128,42 @@ export function VideoSourceField({
             </DialogContent>
           </Dialog>
         </div>
+      ) : value.source === "external" ? (
+        <div className="mt-3 space-y-3">
+          <div>
+            <Label htmlFor={`hls-${label}`}>Link HLS (.m3u8)</Label>
+            <Input
+              id={`hls-${label}`}
+              value={value.hlsUrl}
+              placeholder="https://…/playlist.m3u8"
+              onChange={(e) => onChange({ ...value, hlsUrl: e.target.value })}
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Compatível com Bunny Stream, Cloudflare Stream, Mux e outros serviços.
+            </p>
+          </div>
+          <div>
+            <Label htmlFor={`mp4-${label}`}>Ou link MP4 direto</Label>
+            <Input
+              id={`mp4-${label}`}
+              value={value.url}
+              placeholder="https://…/video.mp4"
+              onChange={(e) => onChange({ ...value, url: e.target.value })}
+            />
+          </div>
+          <div>
+            <Label htmlFor={`ext-${label}`}>Identificador no serviço (opcional)</Label>
+            <Input
+              id={`ext-${label}`}
+              value={value.externalId}
+              onChange={(e) => onChange({ ...value, externalId: e.target.value })}
+            />
+          </div>
+          <SubtitlesField
+            value={value.subtitles}
+            onChange={(subtitles) => onChange({ ...value, subtitles })}
+          />
+        </div>
       ) : (
         <div className="mt-3">
           <MediaPicker
@@ -127,6 +172,10 @@ export function VideoSourceField({
             folder={folder}
             value={value.url}
             onChange={(url) => onChange({ ...value, url })}
+          />
+          <SubtitlesField
+            value={value.subtitles}
+            onChange={(subtitles) => onChange({ ...value, subtitles })}
           />
         </div>
       )}

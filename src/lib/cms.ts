@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { SubtitleTrack } from "@/lib/subtitles";
 import type { AppState, Category, Hero, Row, Story, Tone, Kind, VideoSource } from "@/lib/app-store";
 
 import coverArca from "@/assets/cover-arca.jpg";
@@ -62,6 +63,24 @@ export async function loadCms(): Promise<CmsData | null> {
     supabase.from("banners").select("*").order("sort_order", { ascending: true }).limit(1),
   ]);
 
+  const { data: subtitleRows } = await supabase
+    .from("video_subtitles")
+    .select("*")
+    .is("episode_id", null)
+    .order("sort_order", { ascending: true });
+
+  const subtitlesFor = (titleId: string, kind: "main" | "trailer"): SubtitleTrack[] =>
+    (subtitleRows ?? [])
+      .filter((r) => r.title_id === titleId && (r.kind ?? "main") === kind)
+      .map((r) => ({
+        id: r.id,
+        languageCode: r.language_code,
+        languageName: r.language_name,
+        url: r.subtitle_url,
+        format: r.format === "srt" ? ("srt" as const) : ("vtt" as const),
+        isDefault: r.is_default,
+      }));
+
   if (titlesRes.error || !titlesRes.data) return null;
 
   const progress = readProgress();
@@ -78,10 +97,24 @@ export async function loadCms(): Promise<CmsData | null> {
     kind: (t.kind === "serie" ? "serie" : "filme") as Kind,
     ...(t.video_url ? { videoUrl: assetToUrl(t.video_url) } : {}),
     ...(t.trailer_url ? { trailerUrl: assetToUrl(t.trailer_url) } : {}),
-    videoSource: (t.video_source === "youtube" ? "youtube" : "upload") as VideoSource,
+    videoSource: (t.video_source === "youtube"
+      ? "youtube"
+      : t.video_source === "external"
+        ? "external"
+        : "upload") as VideoSource,
+    ...(t.hls_url ? { hlsUrl: t.hls_url } : {}),
+    ...(t.external_video_id ? { externalVideoId: t.external_video_id } : {}),
+    ...(t.trailer_hls_url ? { trailerHlsUrl: t.trailer_hls_url } : {}),
+    ...(t.trailer_external_id ? { trailerExternalId: t.trailer_external_id } : {}),
+    subtitles: subtitlesFor(t.id, "main"),
+    trailerSubtitles: subtitlesFor(t.id, "trailer"),
     ...(t.youtube_url ? { youtubeUrl: t.youtube_url } : {}),
     ...(t.youtube_video_id ? { youtubeVideoId: t.youtube_video_id } : {}),
-    trailerSource: (t.trailer_source === "youtube" ? "youtube" : "upload") as VideoSource,
+    trailerSource: (t.trailer_source === "youtube"
+      ? "youtube"
+      : t.trailer_source === "external"
+        ? "external"
+        : "upload") as VideoSource,
     ...(t.trailer_youtube_url ? { trailerYoutubeUrl: t.trailer_youtube_url } : {}),
     ...(t.trailer_youtube_id ? { trailerYoutubeId: t.trailer_youtube_id } : {}),
     ...(progress[t.slug] ? { progress: progress[t.slug] } : {}),
@@ -121,6 +154,30 @@ export async function loadCms(): Promise<CmsData | null> {
   return { stories, rows, categories, ...(hero ? { hero } : {}) } as CmsData;
 }
 
+/** Reescreve as faixas de legenda de um título. */
+async function syncSubtitles(titleId: string, kind: "main" | "trailer", tracks: SubtitleTrack[]) {
+  await supabase
+    .from("video_subtitles")
+    .delete()
+    .eq("title_id", titleId)
+    .eq("kind", kind)
+    .is("episode_id", null);
+  const valid = tracks.filter((t) => t.languageCode && t.url);
+  if (!valid.length) return;
+  await supabase.from("video_subtitles").insert(
+    valid.map((t, i) => ({
+      title_id: titleId,
+      kind,
+      language_code: t.languageCode,
+      language_name: t.languageName || t.languageCode,
+      subtitle_url: t.url,
+      format: t.format,
+      is_default: t.isDefault,
+      sort_order: i,
+    })),
+  );
+}
+
 /** Sincroniza todo o conteúdo editado no admin com o banco (só o admin passa no RLS). */
 export async function saveCms(state: AppState): Promise<void> {
   // ---- títulos ----
@@ -136,12 +193,16 @@ export async function saveCms(state: AppState): Promise<void> {
     tags: s.tags,
     video_url: s.videoUrl ? urlToAsset(s.videoUrl) : null,
     trailer_url: s.trailerUrl ? urlToAsset(s.trailerUrl) : null,
-    video_source: s.videoSource === "youtube" ? "youtube" : "upload",
-    youtube_url: s.videoSource === "youtube" ? (s.youtubeUrl ?? null) : null,
-    youtube_video_id: s.videoSource === "youtube" ? (s.youtubeVideoId ?? null) : null,
-    trailer_source: s.trailerSource === "youtube" ? "youtube" : "upload",
-    trailer_youtube_url: s.trailerSource === "youtube" ? (s.trailerYoutubeUrl ?? null) : null,
-    trailer_youtube_id: s.trailerSource === "youtube" ? (s.trailerYoutubeId ?? null) : null,
+    video_source: s.videoSource ?? "upload",
+    youtube_url: s.youtubeUrl ?? null,
+    youtube_video_id: s.youtubeVideoId ?? null,
+    hls_url: s.hlsUrl ?? null,
+    external_video_id: s.externalVideoId ?? null,
+    trailer_source: s.trailerSource ?? "upload",
+    trailer_youtube_url: s.trailerYoutubeUrl ?? null,
+    trailer_youtube_id: s.trailerYoutubeId ?? null,
+    trailer_hls_url: s.trailerHlsUrl ?? null,
+    trailer_external_id: s.trailerExternalId ?? null,
     sort_order: index,
   }));
   if (titlePayload.length) {
@@ -158,6 +219,14 @@ export async function saveCms(state: AppState): Promise<void> {
 
   const titleRows = must(await supabase.from("titles").select("id, slug"));
   const idBySlug = new Map((titleRows ?? []).map((t) => [t.slug, t.id]));
+
+  // ---- legendas de cada título ----
+  for (const story of state.stories) {
+    const titleId = idBySlug.get(story.slug);
+    if (!titleId) continue;
+    await syncSubtitles(titleId, "main", story.subtitles ?? []);
+    await syncSubtitles(titleId, "trailer", story.trailerSubtitles ?? []);
+  }
 
   // ---- categorias ----
   const catsWithId = state.categories.filter((c) => isUuid(c.id));
