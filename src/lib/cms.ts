@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { AppState, Category, Hero, Row, Story, Tone, Kind } from "@/lib/app-store";
+import type { AppState, Category, Hero, Row, Story, Tone, Kind, VideoSource } from "@/lib/app-store";
 
 import coverArca from "@/assets/cover-arca.jpg";
 import coverDavi from "@/assets/cover-davi.jpg";
