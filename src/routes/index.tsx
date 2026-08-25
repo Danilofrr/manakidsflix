@@ -162,9 +162,7 @@ function Home() {
         </section>
       </main>
 
-      <footer className="border-t border-border/60 py-8">
-        <p className="text-center text-xs text-muted-foreground">{state.texts.footer}</p>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
