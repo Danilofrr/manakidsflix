@@ -6,6 +6,8 @@ import { useAuth } from "@/lib/auth";
 
 export type Kind = "filme" | "serie";
 
+export type VideoSource = "upload" | "youtube";
+
 export type Story = {
   slug: string;
   title: string;
@@ -19,6 +21,13 @@ export type Story = {
   kind: Kind;
   videoUrl?: string;
   trailerUrl?: string;
+  /** Origem do vídeo principal: arquivo da biblioteca ou link do YouTube. */
+  videoSource?: VideoSource;
+  youtubeUrl?: string;
+  youtubeVideoId?: string;
+  trailerSource?: VideoSource;
+  trailerYoutubeUrl?: string;
+  trailerYoutubeId?: string;
 };
 
 export type Row = { id: string; title: string; subtitle: string; slugs: string[] };
