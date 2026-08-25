@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
+  Captions,
+  CaptionsOff,
   Maximize,
   Minimize,
   Pause,
@@ -11,6 +13,13 @@ import {
   VolumeX,
 } from "lucide-react";
 import { loadYouTubeApi, type VideoSource } from "@/lib/youtube";
+import {
+  pickTrack,
+  readCaptionPreference,
+  resolveTrackUrl,
+  writeCaptionPreference,
+  type SubtitleTrack,
+} from "@/lib/subtitles";
 
 const fmt = (s: number) => {
   if (!Number.isFinite(s) || s < 0) s = 0;
@@ -24,22 +33,123 @@ const fmt = (s: number) => {
 
 export type StreamPlayerProps = {
   source: VideoSource;
-  /** URL do arquivo quando a fonte é a biblioteca da Maná Kids. */
+  /** URL do arquivo (biblioteca Maná Kids ou MP4 externo). */
   url?: string;
+  /** Playlist HLS (.m3u8) para streaming externo. */
+  hlsUrl?: string;
   youtubeId?: string;
   title: string;
   poster?: string;
   startAt?: number;
+  subtitles?: SubtitleTrack[];
   onProgress?: (currentTime: number, duration: number) => void;
   onEnded?: () => void;
   onBack?: () => void;
 };
 
-export function StreamPlayer(props: StreamPlayerProps) {
-  const { source, url, youtubeId, title, poster, startAt = 0, onProgress, onEnded, onBack } = props;
-  const shellRef = useRef<HTMLDivElement>(null);
-  const [fullscreen, setFullscreen] = useState(false);
+type Engine = {
+  play: () => void;
+  pause: () => void;
+  seek: (t: number) => void;
+  setVolume: (v: number) => void;
+  setMuted: (m: boolean) => void;
+};
 
+export function StreamPlayer(props: StreamPlayerProps) {
+  const {
+    source,
+    url,
+    hlsUrl,
+    youtubeId,
+    title,
+    poster,
+    startAt = 0,
+    subtitles = [],
+    onProgress,
+    onEnded,
+    onBack,
+  } = props;
+
+  const shellRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const ytHostRef = useRef<HTMLDivElement>(null);
+  const ytRef = useRef<any>(null);
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  const progressCb = useRef(onProgress);
+  const endedCb = useRef(onEnded);
+  progressCb.current = onProgress;
+  endedCb.current = onEnded;
+
+  const isYouTube = source === "youtube" && Boolean(youtubeId);
+
+  const [started, setStarted] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const [current, setCurrent] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolumeState] = useState(100);
+  const [muted, setMutedState] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [controlsVisible, setControlsVisible] = useState(true);
+  const [ccMenu, setCcMenu] = useState(false);
+  const [cueText, setCueText] = useState("");
+
+  // ---- legendas ----
+  const pref = useMemo(() => readCaptionPreference(), []);
+  const [ytTracks, setYtTracks] = useState<SubtitleTrack[]>([]);
+  const tracks = isYouTube ? ytTracks : subtitles;
+  const [activeLang, setActiveLang] = useState<string | null>(() =>
+    pref.enabled ? (pref.language ?? null) : null,
+  );
+  const [resolvedUrls, setResolvedUrls] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let active = true;
+    void Promise.all(
+      subtitles.map(async (t) => [t.id, await resolveTrackUrl(t)] as const),
+    ).then((pairs) => {
+      if (active) setResolvedUrls(Object.fromEntries(pairs));
+    });
+    return () => {
+      active = false;
+    };
+  }, [subtitles]);
+
+  // aplica a preferência salva assim que sabemos quais faixas existem
+  useEffect(() => {
+    if (!tracks.length || activeLang) return;
+    if (!pref.enabled) return;
+    const chosen = pickTrack(tracks, pref.language);
+    if (chosen) setActiveLang(chosen.languageCode);
+  }, [tracks, pref.enabled, pref.language, activeLang]);
+
+  const chooseLanguage = (lang: string | null) => {
+    setActiveLang(lang);
+    setCcMenu(false);
+    writeCaptionPreference({ enabled: Boolean(lang), language: lang ?? pref.language });
+    if (isYouTube) applyYouTubeCaptions(lang);
+  };
+
+  const applyYouTubeCaptions = (lang: string | null) => {
+    const p = ytRef.current;
+    if (!p) return;
+    try {
+      if (!lang) {
+        p.unloadModule?.("captions");
+        p.unloadModule?.("cc");
+      } else {
+        p.loadModule?.("captions");
+        p.loadModule?.("cc");
+        p.setOption?.("captions", "track", { languageCode: lang });
+        p.setOption?.("cc", "track", { languageCode: lang });
+      }
+    } catch {
+      /* nem todo vídeo expõe o módulo de legendas */
+    }
+  };
+
+  // ---- fullscreen ----
   useEffect(() => {
     const handler = () => setFullscreen(Boolean(document.fullscreenElement));
     document.addEventListener("fullscreenchange", handler);
@@ -47,101 +157,80 @@ export function StreamPlayer(props: StreamPlayerProps) {
   }, []);
 
   const toggleFullscreen = useCallback(() => {
-    if (document.fullscreenElement) void document.exitFullscreen();
-    else void shellRef.current?.requestFullscreen?.();
+    if (document.fullscreenElement) {
+      void document.exitFullscreen();
+      return;
+    }
+    const shell = shellRef.current as any;
+    if (shell?.requestFullscreen) void shell.requestFullscreen();
+    else if ((videoRef.current as any)?.webkitEnterFullscreen)
+      (videoRef.current as any).webkitEnterFullscreen();
   }, []);
 
-  return (
-    <div
-      ref={shellRef}
-      className="relative overflow-hidden rounded-3xl border-2 border-border/70 bg-black shadow-card"
-    >
-      <div className="flex items-center gap-3 bg-black/90 px-4 py-2.5">
-        {onBack ? (
-          <button
-            onClick={onBack}
-            aria-label="Voltar"
-            className="grid h-8 w-8 place-items-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </button>
-        ) : null}
-        <p className="truncate font-display text-sm text-white">{title}</p>
-      </div>
-
-      {source === "youtube" && youtubeId ? (
-        <YouTubeStage
-          videoId={youtubeId}
-          startAt={startAt}
-          {...(onProgress ? { onProgress } : {})}
-          {...(onEnded ? { onEnded } : {})}
-          fullscreen={fullscreen}
-          onToggleFullscreen={toggleFullscreen}
-        />
-      ) : (
-        <video
-          src={url}
-          poster={poster}
-          controls
-          autoPlay
-          playsInline
-          className="aspect-video w-full bg-black object-contain"
-          onLoadedMetadata={(e) => {
-            if (startAt > 0) e.currentTarget.currentTime = startAt;
-          }}
-          onTimeUpdate={(e) =>
-            onProgress?.(e.currentTarget.currentTime, e.currentTarget.duration || 0)
-          }
-          onEnded={() => onEnded?.()}
-        />
-      )}
-    </div>
-  );
-}
-
-function YouTubeStage({
-  videoId,
-  startAt,
-  onProgress,
-  onEnded,
-  fullscreen,
-  onToggleFullscreen,
-}: {
-  videoId: string;
-  startAt: number;
-  onProgress?: (currentTime: number, duration: number) => void;
-  onEnded?: () => void;
-  fullscreen: boolean;
-  onToggleFullscreen: () => void;
-}) {
-  const hostRef = useRef<HTMLDivElement>(null);
-  const playerRef = useRef<any>(null);
-  const progressCb = useRef(onProgress);
-  const endedCb = useRef(onEnded);
-  progressCb.current = onProgress;
-  endedCb.current = onEnded;
-
-  const [ready, setReady] = useState(false);
-  const [playing, setPlaying] = useState(false);
-  const [muted, setMuted] = useState(false);
-  const [volume, setVolume] = useState(100);
-  const [current, setCurrent] = useState(0);
-  const [duration, setDuration] = useState(0);
-
+  // ---- HLS / arquivo ----
   useEffect(() => {
+    if (isYouTube || !started) return;
+    const video = videoRef.current;
+    const src = hlsUrl || url;
+    if (!video || !src) return;
+
+    let destroy: (() => void) | undefined;
+    const isHls = /\.m3u8(\?|$)/i.test(src);
+
+    if (isHls && !video.canPlayType("application/vnd.apple.mpegurl")) {
+      void import("hls.js").then(({ default: Hls }) => {
+        if (!Hls.isSupported()) {
+          video.src = src;
+          return;
+        }
+        const hls = new Hls({ enableWorker: true });
+        hls.loadSource(src);
+        hls.attachMedia(video);
+        destroy = () => hls.destroy();
+      });
+    } else {
+      video.src = src;
+    }
+    return () => destroy?.();
+  }, [isYouTube, started, url, hlsUrl]);
+
+  // legendas próprias renderizadas por nós (para controlar o estilo)
+  useEffect(() => {
+    const video = videoRef.current;
+    if (isYouTube || !video) return;
+    const list = Array.from(video.textTracks);
+    let activeTrack: TextTrack | null = null;
+    for (const t of list) {
+      const isActive = Boolean(activeLang) && t.language === activeLang;
+      t.mode = isActive ? "hidden" : "disabled";
+      if (isActive) activeTrack = t;
+    }
+    setCueText("");
+    if (!activeTrack) return;
+    const onCue = () => {
+      const cues = Array.from(activeTrack?.activeCues ?? []) as VTTCue[];
+      setCueText(cues.map((c) => c.text.replace(/<[^>]+>/g, "")).join("\n"));
+    };
+    activeTrack.addEventListener("cuechange", onCue);
+    return () => activeTrack?.removeEventListener("cuechange", onCue);
+  }, [activeLang, isYouTube, started, resolvedUrls]);
+
+  // ---- YouTube ----
+  useEffect(() => {
+    if (!isYouTube || !started) return;
     let cancelled = false;
-    let ticker: ReturnType<typeof setInterval> | undefined;
 
     void loadYouTubeApi().then((YT) => {
-      if (cancelled || !hostRef.current) return;
-      playerRef.current = new YT.Player(hostRef.current, {
-        videoId,
+      if (cancelled || !ytHostRef.current) return;
+      ytRef.current = new YT.Player(ytHostRef.current, {
+        videoId: youtubeId,
         playerVars: {
+          controls: 0,
           playsinline: 1,
           enablejsapi: 1,
           rel: 0,
           modestbranding: 1,
-          controls: 0,
+          iv_load_policy: 3,
           disablekb: 0,
           origin: window.location.origin,
           start: Math.floor(startAt),
@@ -150,22 +239,43 @@ function YouTubeStage({
           onReady: (e: any) => {
             setReady(true);
             setDuration(e.target.getDuration?.() ?? 0);
-            setVolume(e.target.getVolume?.() ?? 100);
+            setVolumeState(e.target.getVolume?.() ?? 100);
             if (startAt > 0) e.target.seekTo(startAt, true);
             e.target.playVideo();
+            setTimeout(() => {
+              try {
+                const list: any[] =
+                  e.target.getOption?.("captions", "tracklist") ??
+                  e.target.getOption?.("cc", "tracklist") ??
+                  [];
+                const mapped: SubtitleTrack[] = (list ?? []).map((t: any, i: number) => ({
+                  id: `yt-${t.languageCode ?? i}`,
+                  languageCode: t.languageCode ?? String(i),
+                  languageName: t.languageName ?? t.displayName ?? t.languageCode ?? "Legenda",
+                  url: "",
+                  format: "vtt" as const,
+                  isDefault: i === 0,
+                }));
+                setYtTracks(mapped);
+                if (activeLang) applyYouTubeCaptions(activeLang);
+                else applyYouTubeCaptions(null);
+              } catch {
+                /* vídeo sem legendas */
+              }
+            }, 1200);
           },
           onStateChange: (e: any) => {
-            const YTState = window.YT?.PlayerState;
-            setPlaying(e.data === YTState?.PLAYING);
-            if (e.data === YTState?.ENDED) endedCb.current?.();
-            if (e.data === YTState?.PLAYING) setDuration(e.target.getDuration?.() ?? 0);
+            const S = window.YT?.PlayerState;
+            setPlaying(e.data === S?.PLAYING);
+            if (e.data === S?.PLAYING) setDuration(e.target.getDuration?.() ?? 0);
+            if (e.data === S?.ENDED) endedCb.current?.();
           },
         },
       });
     });
 
-    ticker = setInterval(() => {
-      const p = playerRef.current;
+    const ticker = setInterval(() => {
+      const p = ytRef.current;
       if (!p?.getCurrentTime) return;
       const t = p.getCurrentTime() ?? 0;
       const d = p.getDuration?.() ?? 0;
@@ -176,110 +286,345 @@ function YouTubeStage({
 
     return () => {
       cancelled = true;
-      if (ticker) clearInterval(ticker);
-      playerRef.current?.destroy?.();
-      playerRef.current = null;
+      clearInterval(ticker);
+      ytRef.current?.destroy?.();
+      ytRef.current = null;
     };
-  }, [videoId, startAt]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isYouTube, started, youtubeId]);
+
+  // ---- engine unificado ----
+  const engine: Engine = useMemo(
+    () =>
+      isYouTube
+        ? {
+            play: () => ytRef.current?.playVideo?.(),
+            pause: () => ytRef.current?.pauseVideo?.(),
+            seek: (t) => ytRef.current?.seekTo?.(t, true),
+            setVolume: (v) => {
+              ytRef.current?.unMute?.();
+              ytRef.current?.setVolume?.(v);
+            },
+            setMuted: (m) => (m ? ytRef.current?.mute?.() : ytRef.current?.unMute?.()),
+          }
+        : {
+            play: () => void videoRef.current?.play(),
+            pause: () => videoRef.current?.pause(),
+            seek: (t) => {
+              if (videoRef.current) videoRef.current.currentTime = t;
+            },
+            setVolume: (v) => {
+              if (videoRef.current) videoRef.current.volume = v / 100;
+            },
+            setMuted: (m) => {
+              if (videoRef.current) videoRef.current.muted = m;
+            },
+          },
+    [isYouTube],
+  );
+
+  const togglePlay = () => (playing ? engine.pause() : engine.play());
 
   const seekTo = (value: number) => {
-    playerRef.current?.seekTo?.(value, true);
+    engine.seek(value);
     setCurrent(value);
   };
 
+  // ---- auto-ocultar controles ----
+  const revealControls = useCallback(() => {
+    setControlsVisible(true);
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    hideTimer.current = setTimeout(() => setControlsVisible(false), 3200);
+  }, []);
+
+  useEffect(() => {
+    if (!started) return;
+    if (!playing) {
+      if (hideTimer.current) clearTimeout(hideTimer.current);
+      setControlsVisible(true);
+      return;
+    }
+    revealControls();
+    return () => {
+      if (hideTimer.current) clearTimeout(hideTimer.current);
+    };
+  }, [playing, started, revealControls]);
+
+  // ---- atalhos de teclado (desktop e Smart TV) ----
+  useEffect(() => {
+    if (!started) return;
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      if (e.key === " " || e.key === "k") {
+        e.preventDefault();
+        togglePlay();
+      } else if (e.key === "ArrowRight") seekTo(Math.min(duration, current + 10));
+      else if (e.key === "ArrowLeft") seekTo(Math.max(0, current - 10));
+      else if (e.key === "f") toggleFullscreen();
+      else if (e.key === "m") {
+        const next = !muted;
+        setMutedState(next);
+        engine.setMuted(next);
+      }
+      revealControls();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
+  const btn =
+    "grid place-items-center rounded-full bg-white/12 text-white transition-colors hover:bg-white/25 h-11 w-11 sm:h-10 sm:w-10";
+
   return (
-    <div className="bg-black">
-      <div className="relative aspect-video w-full">
-        <div ref={hostRef} className="absolute inset-0 h-full w-full" />
-        {/* Bloqueia apenas cliques diretos no vídeo; os controles são os nossos. */}
-        <button
-          type="button"
-          aria-label={playing ? "Pausar" : "Reproduzir"}
-          onClick={() => (playing ? playerRef.current?.pauseVideo?.() : playerRef.current?.playVideo?.())}
-          onDoubleClick={onToggleFullscreen}
-          className="absolute inset-0 h-full w-full cursor-pointer bg-transparent"
-        />
-      </div>
+    <div
+      ref={shellRef}
+      className="relative select-none overflow-hidden rounded-3xl bg-black shadow-card"
+      onMouseMove={revealControls}
+      onTouchStart={revealControls}
+    >
+      <div className="relative aspect-video w-full bg-black">
+        {/* palco do vídeo */}
+        {started ? (
+          isYouTube ? (
+            <div ref={ytHostRef} className="absolute inset-0 h-full w-full" />
+          ) : (
+            <video
+              ref={videoRef}
+              poster={poster}
+              autoPlay
+              playsInline
+              crossOrigin="anonymous"
+              className="absolute inset-0 h-full w-full bg-black object-contain"
+              onLoadedMetadata={(e) => {
+                setReady(true);
+                setDuration(e.currentTarget.duration || 0);
+                if (startAt > 0) e.currentTarget.currentTime = startAt;
+              }}
+              onPlay={() => setPlaying(true)}
+              onPause={() => setPlaying(false)}
+              onVolumeChange={(e) => {
+                setVolumeState(Math.round(e.currentTarget.volume * 100));
+                setMutedState(e.currentTarget.muted);
+              }}
+              onTimeUpdate={(e) => {
+                const t = e.currentTarget.currentTime;
+                const d = e.currentTarget.duration || 0;
+                setCurrent(t);
+                if (d) setDuration(d);
+                if (d) progressCb.current?.(t, d);
+              }}
+              onEnded={() => endedCb.current?.()}
+            >
+              {subtitles.map((t) => (
+                <track
+                  key={t.id}
+                  kind="subtitles"
+                  src={resolvedUrls[t.id] ?? t.url}
+                  srcLang={t.languageCode}
+                  label={t.languageName}
+                />
+              ))}
+            </video>
+          )
+        ) : null}
 
-      <div className="flex flex-wrap items-center gap-2 bg-black px-3 py-2.5 text-white sm:gap-3 sm:px-4">
-        <input
-          type="range"
-          aria-label="Barra de progresso"
-          min={0}
-          max={Math.max(duration, 1)}
-          step={1}
-          value={Math.min(current, duration || 0)}
-          disabled={!ready}
-          onChange={(e) => seekTo(Number(e.target.value))}
-          className="order-first h-1.5 w-full cursor-pointer appearance-none rounded-full bg-white/25 accent-primary"
-        />
-        <button
-          aria-label="Voltar 10 segundos"
-          onClick={() => seekTo(Math.max(0, current - 10))}
-          className="grid h-9 w-9 place-items-center rounded-full bg-white/10 hover:bg-white/20"
-        >
-          <RotateCcw className="h-4 w-4" />
-        </button>
-        <button
-          aria-label={playing ? "Pausar" : "Reproduzir"}
-          onClick={() => (playing ? playerRef.current?.pauseVideo?.() : playerRef.current?.playVideo?.())}
-          className="grid h-10 w-10 place-items-center rounded-full bg-gradient-brand shadow-glow"
-        >
-          {playing ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 fill-current" />}
-        </button>
-        <button
-          aria-label="Avançar 10 segundos"
-          onClick={() => seekTo(Math.min(duration, current + 10))}
-          className="grid h-9 w-9 place-items-center rounded-full bg-white/10 hover:bg-white/20"
-        >
-          <RotateCw className="h-4 w-4" />
-        </button>
-
-        <span className="font-display text-xs tabular-nums">
-          {fmt(current)} / {fmt(duration)}
-        </span>
-
-        <div className="ml-auto flex items-center gap-2">
+        {/* clique/toque no vídeo controla play-pause */}
+        {started ? (
           <button
-            aria-label={muted ? "Ativar som" : "Silenciar"}
+            type="button"
+            aria-label={playing ? "Pausar" : "Reproduzir"}
             onClick={() => {
-              const p = playerRef.current;
-              if (!p) return;
-              if (muted) {
-                p.unMute?.();
-                setMuted(false);
-              } else {
-                p.mute?.();
-                setMuted(true);
-              }
+              togglePlay();
+              revealControls();
             }}
-            className="grid h-9 w-9 place-items-center rounded-full bg-white/10 hover:bg-white/20"
-          >
-            {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-          </button>
-          <input
-            type="range"
-            aria-label="Volume"
-            min={0}
-            max={100}
-            value={muted ? 0 : volume}
-            onChange={(e) => {
-              const v = Number(e.target.value);
-              setVolume(v);
-              setMuted(v === 0);
-              playerRef.current?.unMute?.();
-              playerRef.current?.setVolume?.(v);
-            }}
-            className="h-1.5 w-20 cursor-pointer appearance-none rounded-full bg-white/25 accent-primary"
+            onDoubleClick={toggleFullscreen}
+            className="absolute inset-0 h-full w-full cursor-pointer bg-transparent"
           />
-          <button
-            aria-label="Tela cheia"
-            onClick={onToggleFullscreen}
-            className="grid h-9 w-9 place-items-center rounded-full bg-white/10 hover:bg-white/20"
+        ) : null}
+
+        {/* legendas próprias (fonte Maná Kids) */}
+        {started && !isYouTube && cueText ? (
+          <div
+            className={`pointer-events-none absolute inset-x-0 flex justify-center px-6 transition-all ${
+              controlsVisible ? "bottom-24 sm:bottom-28" : "bottom-8"
+            }`}
           >
-            {fullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
-          </button>
+            <p className="max-w-[90%] whitespace-pre-line rounded-xl bg-black/65 px-3 py-1.5 text-center text-base font-semibold leading-snug text-white [text-shadow:0_2px_4px_rgba(0,0,0,0.9)] sm:text-xl">
+              {cueText}
+            </p>
+          </div>
+        ) : null}
+
+        {/* capa personalizada antes do play */}
+        {!started ? (
+          <div className="absolute inset-0">
+            {poster ? (
+              <img src={poster} alt={title} className="h-full w-full object-cover" />
+            ) : (
+              <div className="h-full w-full bg-gradient-brand" />
+            )}
+            <div className="absolute inset-0 grid place-items-center bg-black/35">
+              <button
+                type="button"
+                aria-label={`Reproduzir ${title}`}
+                onClick={() => {
+                  setStarted(true);
+                  revealControls();
+                }}
+                className="grid h-20 w-20 place-items-center rounded-full bg-gradient-brand text-primary-foreground shadow-glow transition-transform hover:scale-110 sm:h-24 sm:w-24"
+              >
+                <Play className="h-9 w-9 fill-current sm:h-11 sm:w-11" />
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        {/* barra superior */}
+        <div
+          className={`pointer-events-none absolute inset-x-0 top-0 flex items-center gap-3 bg-gradient-to-b from-black/80 to-transparent px-4 py-3 transition-opacity duration-300 ${
+            controlsVisible || !started ? "opacity-100" : "opacity-0"
+          }`}
+        >
+          {onBack ? (
+            <button
+              onClick={onBack}
+              aria-label="Voltar"
+              className="pointer-events-auto grid h-9 w-9 place-items-center rounded-full bg-white/15 text-white hover:bg-white/30"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+          ) : null}
+          <p className="truncate font-display text-sm text-white sm:text-base">{title}</p>
         </div>
+
+        {/* controles Maná Kids */}
+        {started ? (
+          <div
+            className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent px-3 pb-3 pt-8 transition-opacity duration-300 sm:px-4 ${
+              controlsVisible ? "opacity-100" : "pointer-events-none opacity-0"
+            }`}
+          >
+            <input
+              type="range"
+              aria-label="Barra de progresso"
+              min={0}
+              max={Math.max(duration, 1)}
+              step={1}
+              value={Math.min(current, duration || 0)}
+              disabled={!ready && isYouTube}
+              onChange={(e) => seekTo(Number(e.target.value))}
+              className="h-2 w-full cursor-pointer appearance-none rounded-full bg-white/25 accent-primary"
+            />
+
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-white sm:gap-3">
+              <button
+                aria-label="Voltar 10 segundos"
+                onClick={() => seekTo(Math.max(0, current - 10))}
+                className={btn}
+              >
+                <RotateCcw className="h-5 w-5" />
+              </button>
+              <button
+                aria-label={playing ? "Pausar" : "Reproduzir"}
+                onClick={togglePlay}
+                className="grid h-12 w-12 place-items-center rounded-full bg-gradient-brand text-primary-foreground shadow-glow"
+              >
+                {playing ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6 fill-current" />}
+              </button>
+              <button
+                aria-label="Avançar 10 segundos"
+                onClick={() => seekTo(Math.min(duration || current + 10, current + 10))}
+                className={btn}
+              >
+                <RotateCw className="h-5 w-5" />
+              </button>
+
+              <span className="font-display text-xs tabular-nums sm:text-sm">
+                {fmt(current)} / {fmt(duration)}
+              </span>
+
+              <div className="ml-auto flex items-center gap-2">
+                {tracks.length > 0 ? (
+                  <div className="relative">
+                    <button
+                      aria-label="Legendas"
+                      aria-pressed={Boolean(activeLang)}
+                      onClick={() => setCcMenu((v) => !v)}
+                      className={`${btn} ${
+                        activeLang ? "bg-primary text-primary-foreground hover:bg-primary" : ""
+                      }`}
+                    >
+                      {activeLang ? (
+                        <Captions className="h-5 w-5" />
+                      ) : (
+                        <CaptionsOff className="h-5 w-5" />
+                      )}
+                    </button>
+                    {ccMenu ? (
+                      <div className="absolute bottom-14 right-0 z-20 w-48 overflow-hidden rounded-2xl border border-white/15 bg-black/95 p-1 text-left">
+                        <p className="px-3 py-2 font-display text-xs uppercase text-white/60">
+                          Legendas
+                        </p>
+                        <button
+                          onClick={() => chooseLanguage(null)}
+                          className={`block w-full rounded-xl px-3 py-2 text-left text-sm ${
+                            activeLang ? "text-white/80 hover:bg-white/10" : "bg-white/15 text-white"
+                          }`}
+                        >
+                          Desativadas
+                        </button>
+                        {tracks.map((t) => (
+                          <button
+                            key={t.id}
+                            onClick={() => chooseLanguage(t.languageCode)}
+                            className={`block w-full rounded-xl px-3 py-2 text-left text-sm ${
+                              activeLang === t.languageCode
+                                ? "bg-white/15 text-white"
+                                : "text-white/80 hover:bg-white/10"
+                            }`}
+                          >
+                            {t.languageName}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                <button
+                  aria-label={muted ? "Ativar som" : "Silenciar"}
+                  onClick={() => {
+                    const next = !muted;
+                    setMutedState(next);
+                    engine.setMuted(next);
+                  }}
+                  className={btn}
+                >
+                  {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                </button>
+                <input
+                  type="range"
+                  aria-label="Volume"
+                  min={0}
+                  max={100}
+                  value={muted ? 0 : volume}
+                  onChange={(e) => {
+                    const v = Number(e.target.value);
+                    setVolumeState(v);
+                    setMutedState(v === 0);
+                    engine.setMuted(v === 0);
+                    engine.setVolume(v);
+                  }}
+                  className="hidden h-1.5 w-20 cursor-pointer appearance-none rounded-full bg-white/25 accent-primary sm:block"
+                />
+                <button aria-label="Tela cheia" onClick={toggleFullscreen} className={btn}>
+                  {fullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );

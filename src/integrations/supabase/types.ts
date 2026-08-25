@@ -102,6 +102,8 @@ export type Database = {
           cover: string | null
           created_at: string
           duration: string | null
+          external_video_id: string | null
+          hls_url: string | null
           id: string
           name: string
           number: number
@@ -123,6 +125,8 @@ export type Database = {
           cover?: string | null
           created_at?: string
           duration?: string | null
+          external_video_id?: string | null
+          hls_url?: string | null
           id?: string
           name: string
           number?: number
@@ -144,6 +148,8 @@ export type Database = {
           cover?: string | null
           created_at?: string
           duration?: string | null
+          external_video_id?: string | null
+          hls_url?: string | null
           id?: string
           name?: string
           number?: number
@@ -608,12 +614,15 @@ export type Database = {
         Row: {
           age_range: string | null
           banner: string | null
+          captions_enabled: boolean
           classification: string | null
           cover: string | null
           created_at: string
           description: string | null
           duration: string | null
+          external_video_id: string | null
           featured: boolean
+          hls_url: string | null
           id: string
           is_new: boolean
           kind: string
@@ -628,6 +637,8 @@ export type Database = {
           tags: string[]
           thumbnail: string | null
           title: string
+          trailer_external_id: string | null
+          trailer_hls_url: string | null
           trailer_source: string
           trailer_url: string | null
           trailer_youtube_id: string | null
@@ -645,12 +656,15 @@ export type Database = {
         Insert: {
           age_range?: string | null
           banner?: string | null
+          captions_enabled?: boolean
           classification?: string | null
           cover?: string | null
           created_at?: string
           description?: string | null
           duration?: string | null
+          external_video_id?: string | null
           featured?: boolean
+          hls_url?: string | null
           id?: string
           is_new?: boolean
           kind?: string
@@ -665,6 +679,8 @@ export type Database = {
           tags?: string[]
           thumbnail?: string | null
           title: string
+          trailer_external_id?: string | null
+          trailer_hls_url?: string | null
           trailer_source?: string
           trailer_url?: string | null
           trailer_youtube_id?: string | null
@@ -682,12 +698,15 @@ export type Database = {
         Update: {
           age_range?: string | null
           banner?: string | null
+          captions_enabled?: boolean
           classification?: string | null
           cover?: string | null
           created_at?: string
           description?: string | null
           duration?: string | null
+          external_video_id?: string | null
           featured?: boolean
+          hls_url?: string | null
           id?: string
           is_new?: boolean
           kind?: string
@@ -702,6 +721,8 @@ export type Database = {
           tags?: string[]
           thumbnail?: string | null
           title?: string
+          trailer_external_id?: string | null
+          trailer_hls_url?: string | null
           trailer_source?: string
           trailer_url?: string | null
           trailer_youtube_id?: string | null
@@ -749,6 +770,63 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      video_subtitles: {
+        Row: {
+          created_at: string
+          episode_id: string | null
+          format: string
+          id: string
+          is_default: boolean
+          kind: string
+          language_code: string
+          language_name: string
+          sort_order: number
+          subtitle_url: string
+          title_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          episode_id?: string | null
+          format?: string
+          id?: string
+          is_default?: boolean
+          kind?: string
+          language_code: string
+          language_name: string
+          sort_order?: number
+          subtitle_url: string
+          title_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          episode_id?: string | null
+          format?: string
+          id?: string
+          is_default?: boolean
+          kind?: string
+          language_code?: string
+          language_name?: string
+          sort_order?: number
+          subtitle_url?: string
+          title_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_subtitles_episode_id_fkey"
+            columns: ["episode_id"]
+            isOneToOne: false
+            referencedRelation: "episodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_subtitles_title_id_fkey"
+            columns: ["title_id"]
+            isOneToOne: false
+            referencedRelation: "titles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       watch_progress: {
         Row: {
