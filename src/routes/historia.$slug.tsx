@@ -106,12 +106,13 @@ function StoryPage() {
               youtubeId: "",
               subtitles: story.subtitles ?? [],
             }
-          : firstEpisode?.video_url
+          : firstEpisode &&
+              (firstEpisode.video_url || firstEpisode.hls_url || firstEpisode.youtube_video_id)
             ? {
-                source: "upload",
-                url: firstEpisode.video_url,
-                hlsUrl: "",
-                youtubeId: "",
+                source: firstEpisode.video_source,
+                url: firstEpisode.video_url ?? "",
+                hlsUrl: firstEpisode.hls_url ?? "",
+                youtubeId: firstEpisode.youtube_video_id ?? "",
                 subtitles: [],
               }
             : null
@@ -315,7 +316,7 @@ function StoryPage() {
                   onClick={() => {
                     setFinished(false);
                     setPlaying({
-                      source: story.trailerSource ?? "upload",
+                      source: story.trailerSource ?? "mana_kids",
                       url: story.trailerUrl ?? "",
                       hlsUrl: story.trailerHlsUrl ?? "",
                       subtitles: story.trailerSubtitles ?? [],
@@ -353,24 +354,27 @@ function StoryPage() {
                         <li key={ep.id}>
                           <button
                             onClick={() => {
-                              if (!ep.video_url) return;
+                              if (!ep.video_url && !ep.hls_url && !ep.youtube_video_id) return;
                               setFinished(false);
-                              void loadEpisodeSubtitles(ep.id).then((subs) =>
-                                setPlaying((p) => (p ? { ...p, subtitles: subs } : p)),
-                              );
-                              setPlaying({
-                                source: ep.hls_url ? "external" : "upload",
-                                url: ep.video_url,
-                                hlsUrl: ep.hls_url ?? "",
-                                subtitles: [],
-                                youtubeId: "",
-                                label: `${ep.number}. ${ep.name}`,
-                                episodeId: ep.id,
-                                startAt: 0,
+                              void Promise.all([
+                                loadEpisodeSubtitles(ep.id),
+                                getWatchProgress(slug, titleId, ep.id),
+                              ]).then(([subtitles, progress]) => {
+                                setPlaying({
+                                  source: ep.video_source,
+                                  url: ep.video_url ?? "",
+                                  hlsUrl: ep.hls_url ?? "",
+                                  subtitles,
+                                  youtubeId: ep.youtube_video_id ?? "",
+                                  label: `${ep.number}. ${ep.name}`,
+                                  episodeId: ep.id,
+                                  startAt:
+                                    progress && !progress.completed ? progress.positionSeconds : 0,
+                                });
                               });
                             }}
                             className="flex w-full items-center gap-3 rounded-2xl border-2 border-border/70 bg-card p-3 text-left transition-colors hover:border-primary disabled:opacity-60"
-                            disabled={!ep.video_url}
+                            disabled={!ep.video_url && !ep.hls_url && !ep.youtube_video_id}
                           >
                             {ep.cover ? (
                               <img
