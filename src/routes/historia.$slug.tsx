@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Play, Plus, ArrowLeft, Clock, BookOpen, Baby } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Play, Plus, ArrowLeft, Clock, BookOpen, Baby, Film } from "lucide-react";
+import { loadSeasonsWithEpisodes, titleIdBySlug, type Episode, type Season } from "@/lib/episodes";
 import { Button } from "@/components/ui/button";
 import { BrandHeader } from "@/components/BrandHeader";
 import { StoryRow } from "@/components/StoryRow";
@@ -29,6 +31,28 @@ function StoryPage() {
   const { state, storyBySlug } = useAppStore();
   const story = storyBySlug(slug);
   const related = state.stories.filter((s) => s.slug !== slug).slice(0, 5);
+  const [playing, setPlaying] = useState<{ url: string; label: string } | null>(null);
+  const [seasons, setSeasons] = useState<{ season: Season; episodes: Episode[] }[]>([]);
+
+  useEffect(() => {
+    setPlaying(null);
+    let active = true;
+    (async () => {
+      try {
+        const id = await titleIdBySlug(slug);
+        if (!id) return;
+        const data = await loadSeasonsWithEpisodes(id);
+        if (active) setSeasons(data.filter((s) => s.episodes.some((e) => e.published)));
+      } catch {
+        /* sem temporadas cadastradas */
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [slug]);
+
+  const mainVideo = story?.videoUrl ?? seasons[0]?.episodes.find((e) => e.published)?.video_url ?? "";
 
   if (!story) {
     return (
@@ -62,28 +86,49 @@ function StoryPage() {
 
         <div className="mt-4 grid gap-8 lg:grid-cols-[1.6fr_1fr]">
           <div className="relative overflow-hidden rounded-4xl border-2 border-border/70 shadow-card">
-            <img
-              src={story.cover}
-              alt={`Cena da história ${story.title}`}
-              width={768}
-              height={1024}
-              className="aspect-video w-full object-cover"
-            />
-            <div className="absolute inset-0 grid place-items-center bg-gradient-fade">
-              <button
-                aria-label={`Reproduzir ${story.title}`}
-                className="grid h-20 w-20 place-items-center rounded-full bg-gradient-brand shadow-glow transition-transform duration-300 hover:scale-110"
-              >
-                <Play className="h-8 w-8 fill-current text-primary-foreground" />
-              </button>
-            </div>
-            {story.progress ? (
-              <div className="absolute inset-x-5 bottom-5 h-2 overflow-hidden rounded-full bg-primary-foreground/30">
-                <div
-                  className="h-full rounded-full bg-sunny"
-                  style={{ width: `${story.progress}%` }}
+            {playing ? (
+              <video
+                src={playing.url}
+                poster={story.cover}
+                controls
+                autoPlay
+                playsInline
+                className="aspect-video w-full bg-foreground/90 object-contain"
+              />
+            ) : (
+              <>
+                <img
+                  src={story.cover}
+                  alt={`Cena da história ${story.title}`}
+                  className="aspect-video w-full object-cover"
                 />
-              </div>
+                <div className="absolute inset-0 grid place-items-center bg-gradient-fade">
+                  {mainVideo ? (
+                    <button
+                      aria-label={`Reproduzir ${story.title}`}
+                      onClick={() => setPlaying({ url: mainVideo, label: story.title })}
+                      className="grid h-20 w-20 place-items-center rounded-full bg-gradient-brand shadow-glow transition-transform duration-300 hover:scale-110"
+                    >
+                      <Play className="h-8 w-8 fill-current text-primary-foreground" />
+                    </button>
+                  ) : (
+                    <span className="rounded-full bg-background/85 px-4 py-2 font-display text-xs text-muted-foreground">
+                      Vídeo ainda não enviado no painel
+                    </span>
+                  )}
+                </div>
+                {story.progress ? (
+                  <div className="absolute inset-x-5 bottom-5 h-2 overflow-hidden rounded-full bg-primary-foreground/30">
+                    <div
+                      className="h-full rounded-full bg-sunny"
+                      style={{ width: `${story.progress}%` }}
+                    />
+                  </div>
+                ) : null}
+              </>
+            )}
+            {playing ? (
+              <p className="bg-card px-4 py-2 font-display text-sm">{playing.label}</p>
             ) : null}
           </div>
 
@@ -123,7 +168,12 @@ function StoryPage() {
             </dl>
 
             <div className="mt-6 flex flex-wrap gap-3">
-              <Button variant="play" size="pill">
+              <Button
+                variant="play"
+                size="pill"
+                disabled={!mainVideo}
+                onClick={() => mainVideo && setPlaying({ url: mainVideo, label: story.title })}
+              >
                 <Play className="fill-current" />
                 {story.progress ? "Continuar" : "Assistir"}
               </Button>
@@ -134,6 +184,62 @@ function StoryPage() {
             </div>
           </div>
         </div>
+        {seasons.length > 0 ? (
+          <section className="mt-12">
+            <h2 className="font-display text-2xl font-extrabold">Episódios</h2>
+            <div className="mt-4 space-y-8">
+              {seasons.map(({ season, episodes }) => (
+                <div key={season.id}>
+                  <h3 className="font-display text-lg font-bold text-muted-foreground">
+                    {season.name || `Temporada ${season.number}`}
+                  </h3>
+                  <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+                    {episodes
+                      .filter((e) => e.published)
+                      .map((ep) => (
+                        <li key={ep.id}>
+                          <button
+                            onClick={() =>
+                              ep.video_url &&
+                              setPlaying({
+                                url: ep.video_url,
+                                label: `${ep.number}. ${ep.name}`,
+                              })
+                            }
+                            className="flex w-full items-center gap-3 rounded-2xl border-2 border-border/70 bg-card p-3 text-left transition-colors hover:border-primary disabled:opacity-60"
+                            disabled={!ep.video_url}
+                          >
+                            {ep.cover ? (
+                              <img
+                                src={ep.cover}
+                                alt=""
+                                className="h-16 w-28 shrink-0 rounded-xl object-cover"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <span className="grid h-16 w-28 shrink-0 place-items-center rounded-xl bg-muted text-muted-foreground">
+                                <Film className="h-5 w-5" />
+                              </span>
+                            )}
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate font-display text-sm">
+                                {ep.number}. {ep.name}
+                              </span>
+                              <span className="block truncate text-xs text-muted-foreground">
+                                {ep.duration || "—"}
+                                {ep.summary ? ` · ${ep.summary}` : ""}
+                              </span>
+                            </span>
+                            <Play className="h-4 w-4 shrink-0 fill-current text-primary" />
+                          </button>
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
       </main>
 
       <div className="pb-14">

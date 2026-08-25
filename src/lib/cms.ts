@@ -76,6 +76,8 @@ export async function loadCms(): Promise<CmsData | null> {
     summary: t.summary ?? "",
     tags: t.tags ?? [],
     kind: (t.kind === "serie" ? "serie" : "filme") as Kind,
+    ...(t.video_url ? { videoUrl: assetToUrl(t.video_url) } : {}),
+    ...(t.trailer_url ? { trailerUrl: assetToUrl(t.trailer_url) } : {}),
     ...(progress[t.slug] ? { progress: progress[t.slug] } : {}),
   }));
 
@@ -126,6 +128,8 @@ export async function saveCms(state: AppState): Promise<void> {
     verse: s.verse,
     summary: s.summary,
     tags: s.tags,
+    video_url: s.videoUrl ? urlToAsset(s.videoUrl) : null,
+    trailer_url: s.trailerUrl ? urlToAsset(s.trailerUrl) : null,
     sort_order: index,
   }));
   if (titlePayload.length) {

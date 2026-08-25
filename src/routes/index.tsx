@@ -3,6 +3,7 @@ import { Play, Plus, Star, Music, Moon, Compass, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BrandHeader } from "@/components/BrandHeader";
 import { StoryRow } from "@/components/StoryRow";
+import { HeroCarousel } from "@/components/HeroCarousel";
 import { useAppStore, useResolvedRows, type Tone } from "@/lib/app-store";
 import mascote from "@/assets/mascote.png";
 
@@ -55,62 +56,66 @@ function Home() {
       <BrandHeader />
 
       <main>
-        <section className="relative overflow-hidden">
-          <img
-            src={hero.image}
-            alt="Banner principal do Maná Kids+"
-            width={1920}
-            height={1088}
-            className="h-[68vh] min-h-[440px] w-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-fade" />
+        <HeroCarousel
+          fallback={
+            <section className="relative overflow-hidden">
+              <img
+                src={hero.image}
+                alt="Banner principal do Maná Kids+"
+                width={1920}
+                height={1088}
+                className="h-[68vh] min-h-[440px] w-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-fade" />
 
-          <img
-            src={mascote}
-            alt=""
-            aria-hidden="true"
-            loading="lazy"
-            width={768}
-            height={768}
-            className="animate-float-soft absolute right-6 top-8 hidden h-24 w-24 object-contain drop-shadow-xl lg:block"
-          />
+              <img
+                src={mascote}
+                alt=""
+                aria-hidden="true"
+                loading="lazy"
+                width={768}
+                height={768}
+                className="animate-float-soft absolute right-6 top-8 hidden h-24 w-24 object-contain drop-shadow-xl lg:block"
+              />
 
-          <div className="absolute inset-x-0 bottom-0">
-            <div className="mx-auto max-w-7xl px-4 pb-8 sm:px-6 sm:pb-12">
-              {hero.badge ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-sunny px-3 py-1 font-display text-xs text-sunny-foreground">
-                  <Star className="h-3.5 w-3.5" />
-                  {hero.badge}
-                </span>
-              ) : null}
-              <h1 className="mt-3 max-w-2xl font-display text-4xl font-extrabold leading-[1.05] text-primary-foreground drop-shadow-md sm:text-6xl">
-                {hero.title}
-              </h1>
-              <p className="mt-3 max-w-xl text-sm text-primary-foreground/90 sm:text-base">
-                {hero.description}
-              </p>
-              {heroStory ? (
-                <p className="mt-2 font-display text-xs text-primary-foreground/80">
-                  {heroStory.verse} · {heroStory.duration} · {heroStory.ageRange}
-                </p>
-              ) : null}
-              <div className="mt-5 flex flex-wrap gap-3">
-                {heroStory ? (
-                  <Button variant="play" size="jumbo" asChild>
-                    <Link to="/historia/$slug" params={{ slug: heroStory.slug }}>
-                      <Play className="fill-current" />
-                      {hero.ctaPrimary}
-                    </Link>
-                  </Button>
-                ) : null}
-                <Button variant="glass" size="jumbo">
-                  <Plus />
-                  {hero.ctaSecondary}
-                </Button>
+              <div className="absolute inset-x-0 bottom-0">
+                <div className="mx-auto max-w-7xl px-4 pb-8 sm:px-6 sm:pb-12">
+                  {hero.badge ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-sunny px-3 py-1 font-display text-xs text-sunny-foreground">
+                      <Star className="h-3.5 w-3.5" />
+                      {hero.badge}
+                    </span>
+                  ) : null}
+                  <h1 className="mt-3 max-w-2xl font-display text-4xl font-extrabold leading-[1.05] text-primary-foreground drop-shadow-md sm:text-6xl">
+                    {hero.title}
+                  </h1>
+                  <p className="mt-3 max-w-xl text-sm text-primary-foreground/90 sm:text-base">
+                    {hero.description}
+                  </p>
+                  {heroStory ? (
+                    <p className="mt-2 font-display text-xs text-primary-foreground/80">
+                      {heroStory.verse} · {heroStory.duration} · {heroStory.ageRange}
+                    </p>
+                  ) : null}
+                  <div className="mt-5 flex flex-wrap gap-3">
+                    {heroStory ? (
+                      <Button variant="play" size="jumbo" asChild>
+                        <Link to="/historia/$slug" params={{ slug: heroStory.slug }}>
+                          <Play className="fill-current" />
+                          {hero.ctaPrimary}
+                        </Link>
+                      </Button>
+                    ) : null}
+                    <Button variant="glass" size="jumbo">
+                      <Plus />
+                      {hero.ctaSecondary}
+                    </Button>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        </section>
+            </section>
+          }
+        />
 
         <section className="mx-auto max-w-7xl px-4 pt-8 sm:px-6">
           <div className="scrollbar-none flex gap-3 overflow-x-auto pb-1">

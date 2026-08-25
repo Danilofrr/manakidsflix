@@ -159,6 +159,22 @@ export function CatalogTab() {
                   onChange={(cover) => setDraft({ ...draft, cover })}
                 />
 
+                <MediaPicker
+                  label="Vídeo principal"
+                  kind="video"
+                  folder="videos"
+                  value={draft.videoUrl ?? ""}
+                  onChange={(videoUrl) => setDraft({ ...draft, videoUrl })}
+                />
+
+                <MediaPicker
+                  label="Trailer (opcional)"
+                  kind="video"
+                  folder="trailers"
+                  value={draft.trailerUrl ?? ""}
+                  onChange={(trailerUrl) => setDraft({ ...draft, trailerUrl })}
+                />
+
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div>
                     <Label htmlFor="duracao">Duração</Label>

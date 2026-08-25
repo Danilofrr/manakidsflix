@@ -19,6 +19,7 @@ import { Route as AdminCatalogoRouteImport } from './routes/admin.catalogo'
 import { Route as AdminCategoriasRouteImport } from './routes/admin.categorias'
 import { Route as AdminClientesRouteImport } from './routes/admin.clientes'
 import { Route as AdminDestaquesRouteImport } from './routes/admin.destaques'
+import { Route as AdminEpisodiosRouteImport } from './routes/admin.episodios'
 import { Route as AdminFileirasRouteImport } from './routes/admin.fileiras'
 import { Route as AdminMidiaRouteImport } from './routes/admin.midia'
 import { Route as AdminPlanosRouteImport } from './routes/admin.planos'
@@ -74,6 +75,11 @@ const AdminDestaquesRoute = AdminDestaquesRouteImport.update({
   path: '/destaques',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminEpisodiosRoute = AdminEpisodiosRouteImport.update({
+  id: '/episodios',
+  path: '/episodios',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminFileirasRoute = AdminFileirasRouteImport.update({
   id: '/fileiras',
   path: '/fileiras',
@@ -105,6 +111,7 @@ export interface FileRoutesByFullPath {
   '/admin/categorias': typeof AdminCategoriasRoute
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/destaques': typeof AdminDestaquesRoute
+  '/admin/episodios': typeof AdminEpisodiosRoute
   '/admin/fileiras': typeof AdminFileirasRoute
   '/admin/midia': typeof AdminMidiaRoute
   '/admin/planos': typeof AdminPlanosRoute
@@ -120,6 +127,7 @@ export interface FileRoutesByTo {
   '/admin/categorias': typeof AdminCategoriasRoute
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/destaques': typeof AdminDestaquesRoute
+  '/admin/episodios': typeof AdminEpisodiosRoute
   '/admin/fileiras': typeof AdminFileirasRoute
   '/admin/midia': typeof AdminMidiaRoute
   '/admin/planos': typeof AdminPlanosRoute
@@ -137,6 +145,7 @@ export interface FileRoutesById {
   '/admin/categorias': typeof AdminCategoriasRoute
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/destaques': typeof AdminDestaquesRoute
+  '/admin/episodios': typeof AdminEpisodiosRoute
   '/admin/fileiras': typeof AdminFileirasRoute
   '/admin/midia': typeof AdminMidiaRoute
   '/admin/planos': typeof AdminPlanosRoute
@@ -155,6 +164,7 @@ export interface FileRouteTypes {
     | '/admin/categorias'
     | '/admin/clientes'
     | '/admin/destaques'
+    | '/admin/episodios'
     | '/admin/fileiras'
     | '/admin/midia'
     | '/admin/planos'
@@ -170,6 +180,7 @@ export interface FileRouteTypes {
     | '/admin/categorias'
     | '/admin/clientes'
     | '/admin/destaques'
+    | '/admin/episodios'
     | '/admin/fileiras'
     | '/admin/midia'
     | '/admin/planos'
@@ -186,6 +197,7 @@ export interface FileRouteTypes {
     | '/admin/categorias'
     | '/admin/clientes'
     | '/admin/destaques'
+    | '/admin/episodios'
     | '/admin/fileiras'
     | '/admin/midia'
     | '/admin/planos'
@@ -273,6 +285,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDestaquesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/episodios': {
+      id: '/admin/episodios'
+      path: '/episodios'
+      fullPath: '/admin/episodios'
+      preLoaderRoute: typeof AdminEpisodiosRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/fileiras': {
       id: '/admin/fileiras'
       path: '/fileiras'
@@ -310,6 +329,7 @@ interface AdminRouteChildren {
   AdminCategoriasRoute: typeof AdminCategoriasRoute
   AdminClientesRoute: typeof AdminClientesRoute
   AdminDestaquesRoute: typeof AdminDestaquesRoute
+  AdminEpisodiosRoute: typeof AdminEpisodiosRoute
   AdminFileirasRoute: typeof AdminFileirasRoute
   AdminMidiaRoute: typeof AdminMidiaRoute
   AdminPlanosRoute: typeof AdminPlanosRoute
@@ -322,6 +342,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminCategoriasRoute: AdminCategoriasRoute,
   AdminClientesRoute: AdminClientesRoute,
   AdminDestaquesRoute: AdminDestaquesRoute,
+  AdminEpisodiosRoute: AdminEpisodiosRoute,
   AdminFileirasRoute: AdminFileirasRoute,
   AdminMidiaRoute: AdminMidiaRoute,
   AdminPlanosRoute: AdminPlanosRoute,

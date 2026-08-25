@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   LayoutDashboard,
   Clapperboard,
+  ListVideo,
   Rows3,
   Tags,
   Images,
@@ -41,6 +42,7 @@ export const Route = createFileRoute("/admin")({
 const nav = [
   { to: "/admin" as const, label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/admin/catalogo" as const, label: "Filmes e séries", icon: Clapperboard },
+  { to: "/admin/episodios" as const, label: "Temporadas e episódios", icon: ListVideo },
   { to: "/admin/destaques" as const, label: "Destaques da home", icon: Sparkles },
   { to: "/admin/fileiras" as const, label: "Fileiras da home", icon: Rows3 },
   { to: "/admin/categorias" as const, label: "Categorias", icon: Tags },
