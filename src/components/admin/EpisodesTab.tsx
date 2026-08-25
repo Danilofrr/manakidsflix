@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { Loader2, Plus, Save, Trash2, Tv } from "lucide-react";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { MediaPicker } from "@/components/admin/MediaPicker";
+import { VideoSourceField } from "@/components/admin/VideoSourceField";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAppStore } from "@/lib/app-store";
+import { loadEpisodeSubtitles, saveEpisodeSubtitles, type SubtitleTrack } from "@/lib/subtitles";
 import {
   createEpisode,
   createSeason,
@@ -193,8 +195,12 @@ function EpisodeEditor({
   onDelete: () => void;
 }) {
   const [draft, setDraft] = useState<Episode>(episode);
+  const [subtitles, setSubtitles] = useState<SubtitleTrack[]>([]);
 
-  useEffect(() => setDraft(episode), [episode]);
+  useEffect(() => {
+    setDraft(episode);
+    void loadEpisodeSubtitles(episode.id).then(setSubtitles);
+  }, [episode]);
 
   return (
     <div className="rounded-2xl border border-border/60 p-4">
@@ -228,12 +234,35 @@ function EpisodeEditor({
           value={draft.cover ?? ""}
           onChange={(cover) => setDraft({ ...draft, cover })}
         />
-        <MediaPicker
-          label="Vídeo do episódio"
-          kind="video"
+      </div>
+
+      <div className="mt-3">
+        <VideoSourceField
+          label="Fonte do vídeo"
           folder="videos"
-          value={draft.video_url ?? ""}
-          onChange={(video_url) => setDraft({ ...draft, video_url })}
+          value={{
+            source: draft.video_source,
+            url: draft.video_url ?? "",
+            youtubeUrl: draft.youtube_url ?? "",
+            youtubeId: draft.youtube_video_id ?? "",
+            hlsUrl: draft.hls_url ?? "",
+            provider: draft.video_provider ?? "",
+            providerVideoId: draft.provider_video_id ?? "",
+            subtitles,
+          }}
+          onChange={(value) => {
+            setDraft({
+              ...draft,
+              video_source: value.source,
+              video_url: value.url,
+              youtube_url: value.youtubeUrl,
+              youtube_video_id: value.youtubeId,
+              hls_url: value.hlsUrl,
+              video_provider: value.provider,
+              provider_video_id: value.providerVideoId,
+            });
+            setSubtitles(value.subtitles);
+          }}
         />
       </div>
 
@@ -255,7 +284,15 @@ function EpisodeEditor({
           />
           Publicado
         </label>
-        <Button variant="play" size="sm" className="ml-auto" onClick={() => onSave(draft)}>
+        <Button
+          variant="play"
+          size="sm"
+          className="ml-auto"
+          onClick={() => {
+            onSave(draft);
+            void saveEpisodeSubtitles(draft.id, subtitles);
+          }}
+        >
           <Save className="h-4 w-4" />
           Salvar
         </Button>

@@ -97,6 +97,7 @@ export function StreamPlayer(props: StreamPlayerProps) {
   const [controlsVisible, setControlsVisible] = useState(true);
   const [ccMenu, setCcMenu] = useState(false);
   const [cueText, setCueText] = useState("");
+  const [playbackError, setPlaybackError] = useState("");
 
   // ---- legendas ----
   const pref = useMemo(() => readCaptionPreference(), []);
@@ -106,6 +107,15 @@ export function StreamPlayer(props: StreamPlayerProps) {
     pref.enabled ? (pref.language ?? null) : null,
   );
   const [resolvedUrls, setResolvedUrls] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    setStarted(autoStart);
+    setReady(false);
+    setPlaying(false);
+    setCurrent(0);
+    setDuration(0);
+    setPlaybackError("");
+  }, [source, url, hlsUrl, youtubeId, autoStart]);
 
   useEffect(() => {
     let active = true;
@@ -187,6 +197,9 @@ export function StreamPlayer(props: StreamPlayerProps) {
           return;
         }
         const hls = new Hls({ enableWorker: true });
+        hls.on(Hls.Events.ERROR, (_event, data) => {
+          if (data.fatal) setPlaybackError("Não foi possível carregar este vídeo.");
+        });
         hls.loadSource(src);
         hls.attachMedia(video);
         destroy = () => hls.destroy();
@@ -232,9 +245,6 @@ export function StreamPlayer(props: StreamPlayerProps) {
           playsinline: 1,
           enablejsapi: 1,
           rel: 0,
-          modestbranding: 1,
-          iv_load_policy: 3,
-          disablekb: 0,
           origin: window.location.origin,
           start: Math.floor(startAt),
         },
@@ -418,6 +428,7 @@ export function StreamPlayer(props: StreamPlayerProps) {
                 if (d) progressCb.current?.(t, d);
               }}
               onEnded={() => endedCb.current?.()}
+              onError={() => setPlaybackError("Não foi possível carregar este vídeo.")}
             >
               {subtitles.map((t) => (
                 <track
@@ -430,6 +441,12 @@ export function StreamPlayer(props: StreamPlayerProps) {
               ))}
             </video>
           )
+        ) : null}
+
+        {started && playbackError ? (
+          <div className="absolute inset-0 z-10 grid place-items-center bg-background p-6 text-center">
+            <p className="font-display text-sm text-muted-foreground">{playbackError}</p>
+          </div>
         ) : null}
 
         {/* clique/toque no vídeo controla play-pause */}
@@ -483,24 +500,6 @@ export function StreamPlayer(props: StreamPlayerProps) {
           </div>
         ) : null}
 
-        {/* barra superior */}
-        <div
-          className={`pointer-events-none absolute inset-x-0 top-0 flex items-center gap-3 bg-gradient-to-b from-black/80 to-transparent px-4 py-3 transition-opacity duration-300 ${
-            controlsVisible || !started ? "opacity-100" : "opacity-0"
-          }`}
-        >
-          {onBack ? (
-            <button
-              onClick={onBack}
-              aria-label="Voltar"
-              className="pointer-events-auto grid h-9 w-9 place-items-center rounded-full bg-white/15 text-white hover:bg-white/30"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </button>
-          ) : null}
-          <p className="truncate font-display text-sm text-white sm:text-base">{title}</p>
-        </div>
-
         {/* controles Maná Kids */}
         {started ? (
           <div
@@ -521,6 +520,11 @@ export function StreamPlayer(props: StreamPlayerProps) {
             />
 
             <div className="mt-2 flex flex-wrap items-center gap-2 text-white sm:gap-3">
+              {onBack ? (
+                <button onClick={onBack} aria-label="Voltar" className={btn}>
+                  <ArrowLeft className="h-5 w-5" />
+                </button>
+              ) : null}
               <button
                 aria-label="Voltar 10 segundos"
                 onClick={() => seekTo(Math.max(0, current - 10))}
