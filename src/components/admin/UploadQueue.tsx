@@ -83,17 +83,21 @@ export function useUploadQueue(onComplete?: (asset: MediaAsset) => void) {
     });
   }, []);
 
-  const retry = useCallback(
-    (id: string) => {
-      setItems((prev) => {
-        const item = prev.find((i) => i.id === id);
-        item?.handle.resume();
-        return prev;
-      });
-      patch(id, { error: undefined });
-    },
-    [patch],
-  );
+  const retry = useCallback((id: string) => {
+    setItems((prev) =>
+      prev.map((it) => {
+        if (it.id !== id) return it;
+        it.handle.resume();
+        const { error: _drop, ...rest } = it;
+        void _drop;
+        return {
+          ...rest,
+          progress: { ...it.progress, status: "uploading" as const },
+        };
+      }),
+    );
+  }, []);
+
 
   return { items, enqueue, dismiss, retry };
 }
