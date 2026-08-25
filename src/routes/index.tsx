@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { BrandHeader } from "@/components/BrandHeader";
 import { StoryRow } from "@/components/StoryRow";
 import { HeroCarousel } from "@/components/HeroCarousel";
+import { SiteFooter } from "@/components/SiteFooter";
 import { useAppStore, useResolvedRows, type Tone } from "@/lib/app-store";
 import mascote from "@/assets/mascote.png";
 
