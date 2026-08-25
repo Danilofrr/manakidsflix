@@ -151,9 +151,9 @@ const IMAGE_SPECS = [
   },
   {
     name: "Capa de filme ou série",
-    size: "768 × 1024",
-    ratio: "3/4",
-    hint: "Pôster vertical das fileiras da home.",
+    size: "1280 × 720",
+    ratio: "16/9",
+    hint: "Miniatura widescreen das fileiras da home, estilo Netflix/YouTube.",
   },
   {
     name: "Miniatura de episódio",
