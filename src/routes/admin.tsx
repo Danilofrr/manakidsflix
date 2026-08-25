@@ -185,7 +185,7 @@ function AdminLayout() {
             aria-label={theme === "dark" ? "Ativar modo claro" : "Ativar modo escuro"}
             className="ml-auto rounded-full p-2 text-muted-foreground hover:bg-muted"
           >
-            {theme === "dark" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+            {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </button>
         </header>
 

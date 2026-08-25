@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { useAuth } from "@/lib/auth";
+import { useAppStore } from "@/lib/app-store";
 
 
 export const Route = createFileRoute("/auth")({
@@ -34,6 +35,7 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const navigate = useNavigate();
   const { session, isAdmin, loading: authLoading, roleLoading } = useAuth();
+  const { state } = useAppStore();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -46,9 +48,12 @@ function AuthPage() {
     // Só redireciona depois que a role real foi lida do banco,
     // senão o admin cai na home antes da consulta terminar.
     if (!authLoading && !roleLoading && session) {
-      navigate({ to: isAdmin ? "/admin" : "/", replace: true });
+      navigate({
+        to: isAdmin ? "/admin" : state.profiles.length ? "/" : "/perfis",
+        replace: true,
+      });
     }
-  }, [authLoading, roleLoading, session, isAdmin, navigate]);
+  }, [authLoading, roleLoading, session, isAdmin, state.profiles.length, navigate]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
