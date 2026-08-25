@@ -400,7 +400,10 @@ export function StreamPlayer(props: StreamPlayerProps) {
         {/* palco do vídeo */}
         {started ? (
           isYouTube ? (
-            <div ref={ytHostRef} className="absolute inset-0 h-full w-full" />
+            <div
+              ref={ytHostRef}
+              className="absolute inset-x-0 top-0 bottom-32 w-full bg-black sm:bottom-24"
+            />
           ) : (
             <video
               ref={videoRef}
@@ -503,7 +506,9 @@ export function StreamPlayer(props: StreamPlayerProps) {
         {/* controles Maná Kids */}
         {started ? (
           <div
-            className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent px-3 pb-3 pt-8 transition-opacity duration-300 sm:px-4 ${
+            className={`absolute inset-x-0 bottom-0 px-3 pb-3 transition-opacity duration-300 sm:px-4 ${
+              isYouTube ? "bg-black pt-2" : "bg-gradient-to-t from-black/90 via-black/60 to-transparent pt-8"
+            } ${
               controlsVisible ? "opacity-100" : "pointer-events-none opacity-0"
             }`}
           >
