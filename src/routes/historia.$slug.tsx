@@ -192,7 +192,10 @@ function StoryPage() {
                 {finished ? (
                   <div className="absolute inset-0 z-10 grid place-items-center rounded-3xl bg-background/95 p-5">
                     <div className="w-full max-w-md text-center">
-                      <h2 className="font-display text-2xl font-extrabold">Fim da história!</h2>
+                      <h2 className="font-display text-2xl font-extrabold">Você terminou! 🎉</h2>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Escolha o que assistir agora.
+                      </p>
                       <div className="mt-4 flex flex-wrap justify-center gap-3">
                         <Button
                           variant="play"
@@ -205,6 +208,10 @@ function StoryPage() {
                         >
                           <RotateCcw />
                           Assistir novamente
+                        </Button>
+                        <Button variant="outline" size="pill" onClick={() => setPlaying(null)}>
+                          <ArrowLeft />
+                          Voltar
                         </Button>
                         {nextStory ? (
                           <Button variant="bubble" size="pill" asChild>

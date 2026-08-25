@@ -16,6 +16,7 @@ export type Episode = {
   cover: string | null;
   summary: string | null;
   video_url: string | null;
+  hls_url: string | null;
   published: boolean;
   sort_order: number;
 };
@@ -34,7 +35,7 @@ export async function listEpisodes(seasonIds: string[]) {
   if (seasonIds.length === 0) return [] as Episode[];
   const { data, error } = await supabase
     .from("episodes")
-    .select("id, season_id, number, name, duration, cover, summary, video_url, published, sort_order")
+    .select("id, season_id, number, name, duration, cover, summary, video_url, hls_url, published, sort_order")
     .in("season_id", seasonIds)
     .order("number", { ascending: true });
   if (error) throw new Error(error.message);
@@ -75,7 +76,7 @@ export async function createEpisode(seasonId: string, number: number) {
   const { data, error } = await supabase
     .from("episodes")
     .insert({ season_id: seasonId, number, name: `Episódio ${number}`, sort_order: number })
-    .select("id, season_id, number, name, duration, cover, summary, video_url, published, sort_order")
+    .select("id, season_id, number, name, duration, cover, summary, video_url, hls_url, published, sort_order")
     .single();
   if (error) throw new Error(error.message);
   return data as Episode;
