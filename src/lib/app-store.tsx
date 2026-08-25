@@ -44,6 +44,9 @@ export type Brand = {
 
 export type Profile = { id: string; name: string; color: string; emoji: string; kid: boolean };
 
+/** Limite de telas por conta, como na Netflix. */
+export const MAX_PROFILES = 3;
+
 export type Texts = {
   safetyTitle: string;
   safetyBody: string;
@@ -96,12 +99,8 @@ export const defaultState: AppState = {
     accent: "#a463e0",
     sunny: "#f6c445",
   },
-  profiles: [
-    { id: "p1", name: "Miguel", color: "#a463e0", emoji: "🦸", kid: true },
-    { id: "p2", name: "Nina", color: "#3fbfc9", emoji: "🐝", kid: true },
-    { id: "p3", name: "Papai", color: "#ef6a4d", emoji: "🧑", kid: false },
-  ],
-  activeProfileId: "p1",
+  profiles: [],
+  activeProfileId: "",
   texts: {
     safetyTitle: "Tudo seguro, do começo ao fim",
     safetyBody:
@@ -310,9 +309,14 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         persist({ ...state, categories: state.categories.filter((c) => c.id !== id) }),
       saveProfile: (p) => {
         const exists = state.profiles.some((x) => x.id === p.id);
+        if (!exists && state.profiles.length >= MAX_PROFILES) return;
+        const profiles = exists
+          ? state.profiles.map((x) => (x.id === p.id ? p : x))
+          : [...state.profiles, p];
         persist({
           ...state,
-          profiles: exists ? state.profiles.map((x) => (x.id === p.id ? p : x)) : [...state.profiles, p],
+          profiles,
+          activeProfileId: state.activeProfileId || p.id,
         });
       },
       removeProfile: (id) =>

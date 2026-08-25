@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { BrandHeader } from "@/components/BrandHeader";
 import { StoryRow } from "@/components/StoryRow";
 import { HeroCarousel } from "@/components/HeroCarousel";
+import { SiteFooter } from "@/components/SiteFooter";
 import { useAppStore, useResolvedRows, type Tone } from "@/lib/app-store";
 import mascote from "@/assets/mascote.png";
 
@@ -162,9 +163,7 @@ function Home() {
         </section>
       </main>
 
-      <footer className="border-t border-border/60 py-8">
-        <p className="text-center text-xs text-muted-foreground">{state.texts.footer}</p>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
