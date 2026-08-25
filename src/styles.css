@@ -249,3 +249,7 @@
 }
 
 @source inline("bg-{primary,secondary,accent,sunny,mint}");
+
+#lovable-badge {
+  display: none !important;
+}
