@@ -5,22 +5,21 @@ import { BrandHeader } from "@/components/BrandHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { useAppStore, newId, type Profile } from "@/lib/app-store";
+import { useAppStore, newId, MAX_PROFILES, type Profile } from "@/lib/app-store";
 
 export const Route = createFileRoute("/perfis")({
   head: () => ({
     meta: [
-      { title: "Gerenciar perfis | Maná Kids+" },
+      { title: "Suas telas | Maná Kids+" },
       {
         name: "description",
         content:
-          "Crie, edite e escolha os perfis da família no Maná Kids+: um espaço por criança, com nome, cor e avatar.",
+          "Crie até três telas no Maná Kids+: cada pessoa da família escolhe o próprio nome, avatar e cor.",
       },
-      { property: "og:title", content: "Gerenciar perfis | Maná Kids+" },
+      { property: "og:title", content: "Suas telas | Maná Kids+" },
       {
         property: "og:description",
-        content: "Um perfil para cada criança, com cor e avatar próprios.",
+        content: "Até três telas por conta, cada uma com nome e avatar próprios.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -30,10 +29,21 @@ export const Route = createFileRoute("/perfis")({
 });
 
 const emojis = ["🦸", "🐝", "🦁", "🐳", "🌟", "🕊️", "🧑", "👩", "🐑", "🌈"];
+const colors = ["#a463e0", "#3fbfc9", "#ef6a4d", "#f6c445", "#5b8def", "#34c77b"];
+
+const emptyDraft = (): Profile => ({
+  id: newId(),
+  name: "",
+  color: colors[0]!,
+  emoji: "🌟",
+  kid: true,
+});
 
 function ProfilesPage() {
   const { state, update, saveProfile, removeProfile } = useAppStore();
-  const [draft, setDraft] = useState<Profile | null>(null);
+  const isFirst = state.profiles.length === 0;
+  const [draft, setDraft] = useState<Profile | null>(isFirst ? emptyDraft() : null);
+  const full = state.profiles.length >= MAX_PROFILES;
 
   return (
     <div className="min-h-screen bg-background">
@@ -47,9 +57,11 @@ function ProfilesPage() {
           Voltar
         </Link>
 
-        <h1 className="mt-4 font-display text-3xl font-extrabold sm:text-4xl">Gerenciar perfis</h1>
+        <h1 className="mt-4 font-display text-3xl font-extrabold sm:text-4xl">
+          {isFirst ? "Crie sua primeira tela" : "Quem está assistindo?"}
+        </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Escolha quem está assistindo ou crie um novo perfil para a família.
+          Escolha um nome e um avatar. Você pode ter até {MAX_PROFILES} telas nesta conta.
         </p>
 
         <div className="mt-8 grid gap-5 sm:grid-cols-3 lg:grid-cols-4">
@@ -64,12 +76,11 @@ function ProfilesPage() {
                 onClick={() => update({ activeProfileId: p.id })}
                 className="mx-auto grid h-20 w-20 place-items-center rounded-full text-3xl transition-transform hover:scale-105"
                 style={{ backgroundColor: p.color }}
-                aria-label={`Usar o perfil ${p.name}`}
+                aria-label={`Usar a tela ${p.name}`}
               >
                 {p.emoji}
               </button>
               <p className="mt-3 font-display text-base">{p.name}</p>
-              <p className="text-xs text-muted-foreground">{p.kid ? "Modo criança" : "Adulto"}</p>
               {p.id === state.activeProfileId ? (
                 <p className="mt-1 inline-flex items-center gap-1 font-display text-xs text-primary">
                   <Check className="h-3 w-3" /> em uso
@@ -91,44 +102,40 @@ function ProfilesPage() {
             </div>
           ))}
 
-          <button
-            onClick={() =>
-              setDraft({ id: newId(), name: "", color: "#a463e0", emoji: "🌟", kid: true })
-            }
-            className="grid min-h-44 place-items-center rounded-3xl border-2 border-dashed border-border/70 text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
-          >
-            <span className="flex flex-col items-center gap-2 font-display text-sm">
-              <Plus className="h-7 w-7" />
-              Novo perfil
-            </span>
-          </button>
+          {!full && (
+            <button
+              onClick={() => setDraft(emptyDraft())}
+              className="grid min-h-44 place-items-center rounded-3xl border-2 border-dashed border-border/70 text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
+            >
+              <span className="flex flex-col items-center gap-2 font-display text-sm">
+                <Plus className="h-7 w-7" />
+                Nova tela
+              </span>
+            </button>
+          )}
         </div>
+
+        {full && !draft ? (
+          <p className="mt-6 text-sm text-muted-foreground">
+            Você já usou as {MAX_PROFILES} telas da conta. Exclua uma para criar outra.
+          </p>
+        ) : null}
 
         {draft ? (
           <div className="mt-8 rounded-3xl border-2 border-border/70 bg-card p-5 shadow-card">
             <h2 className="font-display text-xl">
-              {state.profiles.some((p) => p.id === draft.id) ? "Editar perfil" : "Novo perfil"}
+              {state.profiles.some((p) => p.id === draft.id) ? "Editar tela" : "Nova tela"}
             </h2>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <div>
-                <Label htmlFor="nome">Nome</Label>
-                <Input
-                  id="nome"
-                  value={draft.name}
-                  onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-                  placeholder="Miguel"
-                />
-              </div>
-              <div>
-                <Label htmlFor="cor">Cor do avatar</Label>
-                <Input
-                  id="cor"
-                  type="color"
-                  value={draft.color}
-                  onChange={(e) => setDraft({ ...draft, color: e.target.value })}
-                  className="h-10 p-1"
-                />
-              </div>
+
+            <div className="mt-4 max-w-sm">
+              <Label htmlFor="nome">Nome da tela</Label>
+              <Input
+                id="nome"
+                value={draft.name}
+                onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+                placeholder="Digite o nome"
+                autoFocus
+              />
             </div>
 
             <div className="mt-4">
@@ -138,9 +145,10 @@ function ProfilesPage() {
                   <button
                     key={e}
                     onClick={() => setDraft({ ...draft, emoji: e })}
-                    className={`grid h-11 w-11 place-items-center rounded-full border-2 text-xl ${
+                    className={`grid h-12 w-12 place-items-center rounded-full border-2 text-xl ${
                       draft.emoji === e ? "border-primary bg-muted" : "border-border/70"
                     }`}
+                    aria-label={`Avatar ${e}`}
                   >
                     {e}
                   </button>
@@ -148,29 +156,40 @@ function ProfilesPage() {
               </div>
             </div>
 
-            <div className="mt-4 flex items-center gap-3">
-              <Switch
-                id="kid"
-                checked={draft.kid}
-                onCheckedChange={(v) => setDraft({ ...draft, kid: v })}
-              />
-              <Label htmlFor="kid">Modo criança</Label>
+            <div className="mt-4">
+              <Label>Cor de fundo</Label>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {colors.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => setDraft({ ...draft, color: c })}
+                    style={{ backgroundColor: c }}
+                    aria-label={`Cor ${c}`}
+                    className={`h-10 w-10 rounded-full border-2 ${
+                      draft.color === c ? "border-foreground" : "border-transparent"
+                    }`}
+                  />
+                ))}
+              </div>
             </div>
 
             <div className="mt-5 flex gap-3">
               <Button
                 variant="play"
                 size="pill"
+                disabled={!draft.name.trim()}
                 onClick={() => {
-                  saveProfile({ ...draft, name: draft.name.trim() || "Novo perfil" });
+                  saveProfile({ ...draft, name: draft.name.trim() });
                   setDraft(null);
                 }}
               >
                 Salvar
               </Button>
-              <Button variant="outline" size="pill" onClick={() => setDraft(null)}>
-                Cancelar
-              </Button>
+              {!isFirst && (
+                <Button variant="outline" size="pill" onClick={() => setDraft(null)}>
+                  Cancelar
+                </Button>
+              )}
             </div>
           </div>
         ) : null}
