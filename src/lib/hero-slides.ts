@@ -50,3 +50,12 @@ export async function reorderHeroSlides(slides: HeroSlide[]) {
     .upsert(slides.map((s, i) => ({ ...s, sort_order: i })) as never);
   if (error) throw new Error(error.message);
 }
+
+/** hero_slides.title_id guarda o id da tabela titles; a UI trabalha com slug. */
+export async function loadTitleMaps() {
+  const { data, error } = await supabase.from("titles").select("id, slug");
+  if (error) throw new Error(error.message);
+  const idBySlug = new Map((data ?? []).map((t) => [t.slug, t.id]));
+  const slugById = new Map((data ?? []).map((t) => [t.id, t.slug]));
+  return { idBySlug, slugById };
+}
