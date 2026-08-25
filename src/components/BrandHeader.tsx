@@ -1,7 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
   Search,
-  Sparkles,
   Moon,
   Sun,
   ChevronDown,
@@ -59,7 +58,7 @@ export function BrandHeader() {
         <nav className="ml-4 hidden items-center gap-1 md:flex">
           {[
             { label: "Início", to: "/" as const },
-            { label: "Perfis", to: "/perfis" as const },
+            { label: "Telas", to: "/perfis" as const },
             ...(isAdmin ? [{ label: "Admin", to: "/admin" as const }] : []),
           ].map((item, i) => (
             <Link
@@ -92,20 +91,17 @@ export function BrandHeader() {
             {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </button>
 
-          <span className="hidden items-center gap-1.5 rounded-full bg-sunny px-3 py-1.5 font-display text-xs text-sunny-foreground sm:inline-flex">
-            <Sparkles className="h-3.5 w-3.5" />
-            Modo criança
-          </span>
-
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center gap-2 rounded-full px-1.5 py-1 transition-colors hover:bg-muted">
-              <span className="hidden font-display text-sm sm:inline">{profile?.name}</span>
+              <span className="hidden font-display text-sm sm:inline">
+                {profile?.name ?? "Criar tela"}
+              </span>
               <span
                 className="grid h-9 w-9 place-items-center rounded-full text-base shadow-card ring-2 ring-background"
-                style={{ backgroundColor: profile?.color }}
+                style={{ backgroundColor: profile?.color ?? "var(--muted)" }}
                 aria-hidden="true"
               >
-                {profile?.emoji}
+                {profile?.emoji ?? "+"}
               </span>
               <ChevronDown className="h-4 w-4 text-muted-foreground" />
             </DropdownMenuTrigger>
@@ -115,7 +111,7 @@ export function BrandHeader() {
                   to="/perfis"
                   className="block bg-grape px-4 py-3.5 font-display text-sm text-grape-foreground"
                 >
-                  Gerenciar perfis
+                  Gerenciar telas
                 </Link>
               </DropdownMenuLabel>
               <div className="py-2">

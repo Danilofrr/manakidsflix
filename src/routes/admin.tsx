@@ -14,9 +14,12 @@ import {
   Palette,
   Menu,
   X,
+  Moon,
+  Sun,
 } from "lucide-react";
 import mascote from "@/assets/mascote.png";
 import { useAuth } from "@/lib/auth";
+import { useTheme } from "@/lib/theme";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -57,6 +60,7 @@ function AdminLayout() {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
+  const { theme, toggle } = useTheme();
 
   useEffect(() => {
     if (loading) return;
@@ -148,7 +152,14 @@ function AdminLayout() {
           })}
         </nav>
 
-        <div className="border-t border-border/60 p-3">
+        <div className="space-y-1 border-t border-border/60 p-3">
+          <button
+            onClick={toggle}
+            className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 font-display text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            {theme === "dark" ? "Modo claro" : "Modo escuro"}
+          </button>
           <Link
             to="/"
             className="flex items-center gap-2 rounded-xl px-3 py-2.5 font-display text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -169,6 +180,13 @@ function AdminLayout() {
             <Menu className="h-5 w-5" />
           </button>
           <span className="font-display text-base font-extrabold">Maná Kids+ Admin</span>
+          <button
+            onClick={toggle}
+            aria-label={theme === "dark" ? "Ativar modo claro" : "Ativar modo escuro"}
+            className="ml-auto rounded-full p-2 text-muted-foreground hover:bg-muted"
+          >
+            {theme === "dark" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+          </button>
         </header>
 
         <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
