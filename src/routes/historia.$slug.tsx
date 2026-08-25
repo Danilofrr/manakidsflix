@@ -102,7 +102,7 @@ function StoryPage() {
                   alt={`Cena da história ${story.title}`}
                   className="aspect-video w-full object-cover"
                 />
-                <div className="absolute inset-0 grid place-items-center bg-gradient-fade">
+                <div className="absolute inset-0 grid place-items-center">
                   {mainVideo ? (
                     <button
                       aria-label={`Reproduzir ${story.title}`}
