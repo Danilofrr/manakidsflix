@@ -17,6 +17,8 @@ export type Story = {
   tags: string[];
   progress?: number;
   kind: Kind;
+  videoUrl?: string;
+  trailerUrl?: string;
 };
 
 export type Row = { id: string; title: string; subtitle: string; slugs: string[] };
@@ -118,6 +120,8 @@ type Ctx = {
   removeRow: (id: string) => void;
   moveRow: (id: string, dir: -1 | 1) => void;
   moveStoryInRow: (rowId: string, slug: string, dir: -1 | 1) => void;
+  reorderRows: (ids: string[]) => void;
+  reorderRowItems: (rowId: string, slugs: string[]) => void;
   toggleStoryInRow: (rowId: string, slug: string) => void;
   saveCategory: (cat: Category) => void;
   removeCategory: (id: string) => void;
@@ -266,6 +270,18 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
           rows: state.rows.map((r) =>
             r.id === rowId ? { ...r, slugs: move(r.slugs, r.slugs.indexOf(slug), dir) } : r,
           ),
+        }),
+      reorderRows: (ids) =>
+        persist({
+          ...state,
+          rows: ids
+            .map((id) => state.rows.find((r) => r.id === id))
+            .filter((r): r is Row => Boolean(r)),
+        }),
+      reorderRowItems: (rowId, slugs) =>
+        persist({
+          ...state,
+          rows: state.rows.map((r) => (r.id === rowId ? { ...r, slugs } : r)),
         }),
       toggleStoryInRow: (rowId, slug) =>
         persist({
