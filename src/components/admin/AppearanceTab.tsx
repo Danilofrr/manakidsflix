@@ -96,9 +96,82 @@ export function AppearanceTab() {
               value={state.texts.footer}
               onChange={(e) => update({ texts: { ...state.texts, footer: e.target.value } })}
             />
+            <p className="mt-2 text-xs text-muted-foreground">
+              As colunas de links e as redes sociais do rodapé ficam em “Rodapé do site”.
+            </p>
           </div>
         </div>
+      </div>
+
+      <div className="mt-6 space-y-4 rounded-3xl border border-border/60 bg-card p-5 shadow-card">
+        <div>
+          <h2 className="font-display text-lg font-extrabold">Medidas certas das imagens</h2>
+          <p className="text-sm text-muted-foreground">
+            Use exatamente estas medidas para as artes ficarem nítidas e sem corte.
+          </p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {IMAGE_SPECS.map((spec) => (
+            <div key={spec.name} className="rounded-2xl border border-border/60 p-4">
+              <div className="mb-3 grid place-items-center rounded-xl bg-muted/60 p-3">
+                <div
+                  className="w-full max-w-[9rem] rounded-lg bg-gradient-brand"
+                  style={{ aspectRatio: spec.ratio }}
+                />
+              </div>
+              <h3 className="font-display text-sm font-extrabold">{spec.name}</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {spec.size} px · proporção {spec.ratio.replace("/", ":")}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">{spec.hint}</p>
+            </div>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Formatos: JPG para fotos e PNG para logos com fundo transparente. Peso ideal até 500 KB
+          por imagem.
+        </p>
       </div>
     </>
   );
 }
+
+const IMAGE_SPECS = [
+  {
+    name: "Capa central (destaque desktop)",
+    size: "1920 × 1080",
+    ratio: "16/9",
+    hint: "Deixe o rosto/logo no lado esquerdo: o texto do banner fica por cima.",
+  },
+  {
+    name: "Capa central (destaque celular)",
+    size: "1080 × 1350",
+    ratio: "4/5",
+    hint: "Versão vertical do banner, usada em telas pequenas.",
+  },
+  {
+    name: "Capa de filme ou série",
+    size: "768 × 1024",
+    ratio: "3/4",
+    hint: "Pôster vertical das fileiras da home.",
+  },
+  {
+    name: "Miniatura de episódio",
+    size: "640 × 360",
+    ratio: "16/9",
+    hint: "Cena do episódio na lista de temporadas.",
+  },
+  {
+    name: "Logo do título",
+    size: "800 × 400",
+    ratio: "2/1",
+    hint: "PNG com fundo transparente, exibido sobre o banner.",
+  },
+  {
+    name: "Logo da marca",
+    size: "512 × 512",
+    ratio: "1/1",
+    hint: "PNG quadrado com fundo transparente.",
+  },
+];
+
