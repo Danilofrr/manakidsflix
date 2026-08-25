@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Film, Pencil, Plus, Trash2, Tv } from "lucide-react";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { MediaPicker } from "@/components/admin/MediaPicker";
+import { VideoSourceField } from "@/components/admin/VideoSourceField";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
