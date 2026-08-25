@@ -23,6 +23,7 @@ import { Route as AdminEpisodiosRouteImport } from './routes/admin.episodios'
 import { Route as AdminFileirasRouteImport } from './routes/admin.fileiras'
 import { Route as AdminMidiaRouteImport } from './routes/admin.midia'
 import { Route as AdminPlanosRouteImport } from './routes/admin.planos'
+import { Route as AdminRodapeRouteImport } from './routes/admin.rodape'
 import { Route as HistoriaSlugRouteImport } from './routes/historia.$slug'
 
 const IndexRoute = IndexRouteImport.update({
@@ -95,6 +96,11 @@ const AdminPlanosRoute = AdminPlanosRouteImport.update({
   path: '/planos',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminRodapeRoute = AdminRodapeRouteImport.update({
+  id: '/rodape',
+  path: '/rodape',
+  getParentRoute: () => AdminRoute,
+} as any)
 const HistoriaSlugRoute = HistoriaSlugRouteImport.update({
   id: '/historia/$slug',
   path: '/historia/$slug',
@@ -115,6 +121,7 @@ export interface FileRoutesByFullPath {
   '/admin/fileiras': typeof AdminFileirasRoute
   '/admin/midia': typeof AdminMidiaRoute
   '/admin/planos': typeof AdminPlanosRoute
+  '/admin/rodape': typeof AdminRodapeRoute
   '/historia/$slug': typeof HistoriaSlugRoute
   '/admin/': typeof AdminIndexRoute
 }
@@ -131,6 +138,7 @@ export interface FileRoutesByTo {
   '/admin/fileiras': typeof AdminFileirasRoute
   '/admin/midia': typeof AdminMidiaRoute
   '/admin/planos': typeof AdminPlanosRoute
+  '/admin/rodape': typeof AdminRodapeRoute
   '/historia/$slug': typeof HistoriaSlugRoute
   '/admin': typeof AdminIndexRoute
 }
@@ -149,6 +157,7 @@ export interface FileRoutesById {
   '/admin/fileiras': typeof AdminFileirasRoute
   '/admin/midia': typeof AdminMidiaRoute
   '/admin/planos': typeof AdminPlanosRoute
+  '/admin/rodape': typeof AdminRodapeRoute
   '/historia/$slug': typeof HistoriaSlugRoute
   '/admin/': typeof AdminIndexRoute
 }
@@ -168,6 +177,7 @@ export interface FileRouteTypes {
     | '/admin/fileiras'
     | '/admin/midia'
     | '/admin/planos'
+    | '/admin/rodape'
     | '/historia/$slug'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
@@ -184,6 +194,7 @@ export interface FileRouteTypes {
     | '/admin/fileiras'
     | '/admin/midia'
     | '/admin/planos'
+    | '/admin/rodape'
     | '/historia/$slug'
     | '/admin'
   id:
@@ -201,6 +212,7 @@ export interface FileRouteTypes {
     | '/admin/fileiras'
     | '/admin/midia'
     | '/admin/planos'
+    | '/admin/rodape'
     | '/historia/$slug'
     | '/admin/'
   fileRoutesById: FileRoutesById
@@ -313,6 +325,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPlanosRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/rodape': {
+      id: '/admin/rodape'
+      path: '/rodape'
+      fullPath: '/admin/rodape'
+      preLoaderRoute: typeof AdminRodapeRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/historia/$slug': {
       id: '/historia/$slug'
       path: '/historia/$slug'
@@ -333,6 +352,7 @@ interface AdminRouteChildren {
   AdminFileirasRoute: typeof AdminFileirasRoute
   AdminMidiaRoute: typeof AdminMidiaRoute
   AdminPlanosRoute: typeof AdminPlanosRoute
+  AdminRodapeRoute: typeof AdminRodapeRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
@@ -346,6 +366,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminFileirasRoute: AdminFileirasRoute,
   AdminMidiaRoute: AdminMidiaRoute,
   AdminPlanosRoute: AdminPlanosRoute,
+  AdminRodapeRoute: AdminRodapeRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 

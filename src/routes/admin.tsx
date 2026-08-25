@@ -12,6 +12,8 @@ import {
   Users,
   CreditCard,
   Palette,
+  PanelBottom,
+
   Menu,
   X,
   Moon,
@@ -53,6 +55,8 @@ const nav = [
   { to: "/admin/clientes" as const, label: "Clientes", icon: Users },
   { to: "/admin/planos" as const, label: "Planos", icon: CreditCard },
   { to: "/admin/aparencia" as const, label: "Aparência e textos", icon: Palette },
+  { to: "/admin/rodape" as const, label: "Rodapé do site", icon: PanelBottom },
+
 ];
 
 function AdminLayout() {
