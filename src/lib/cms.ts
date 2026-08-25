@@ -78,6 +78,12 @@ export async function loadCms(): Promise<CmsData | null> {
     kind: (t.kind === "serie" ? "serie" : "filme") as Kind,
     ...(t.video_url ? { videoUrl: assetToUrl(t.video_url) } : {}),
     ...(t.trailer_url ? { trailerUrl: assetToUrl(t.trailer_url) } : {}),
+    videoSource: (t.video_source === "youtube" ? "youtube" : "upload") as VideoSource,
+    ...(t.youtube_url ? { youtubeUrl: t.youtube_url } : {}),
+    ...(t.youtube_video_id ? { youtubeVideoId: t.youtube_video_id } : {}),
+    trailerSource: (t.trailer_source === "youtube" ? "youtube" : "upload") as VideoSource,
+    ...(t.trailer_youtube_url ? { trailerYoutubeUrl: t.trailer_youtube_url } : {}),
+    ...(t.trailer_youtube_id ? { trailerYoutubeId: t.trailer_youtube_id } : {}),
     ...(progress[t.slug] ? { progress: progress[t.slug] } : {}),
   }));
 
