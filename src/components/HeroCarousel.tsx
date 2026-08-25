@@ -56,17 +56,19 @@ export function HeroCarousel({ fallback }: { fallback: React.ReactNode }) {
           playsInline
           className="h-[68vh] min-h-[440px] w-full object-cover"
         />
-      ) : (
+      ) : current.image_desktop || current.image_mobile ? (
         <picture>
           {current.image_mobile ? (
             <source media="(max-width: 640px)" srcSet={current.image_mobile} />
           ) : null}
           <img
-            src={current.image_desktop ?? current.image_mobile ?? ""}
+            src={current.image_desktop ?? current.image_mobile ?? undefined}
             alt={`Destaque: ${current.title}`}
             className="h-[68vh] min-h-[440px] w-full object-cover"
           />
         </picture>
+      ) : (
+        <div className="h-[68vh] min-h-[440px] w-full bg-gradient-brand" />
       )}
 
       <div className="absolute inset-0 bg-gradient-fade" />

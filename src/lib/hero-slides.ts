@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { assetToUrl } from "@/lib/cms";
 
 export type HeroSlide = {
   id: string;
@@ -26,7 +27,14 @@ export async function listHeroSlides(onlyPublished = false) {
   if (onlyPublished) query = query.eq("published", true);
   const { data, error } = await query;
   if (error) throw new Error(error.message);
-  return (data ?? []) as HeroSlide[];
+  // As imagens empacotadas com o app ficam no banco apenas como chave ("hero-mana").
+  return ((data ?? []) as HeroSlide[]).map((s) => ({
+    ...s,
+    image_desktop: s.image_desktop ? assetToUrl(s.image_desktop) : null,
+    image_mobile: s.image_mobile ? assetToUrl(s.image_mobile) : null,
+    video_url: s.video_url ? assetToUrl(s.video_url) : null,
+    logo: s.logo ? assetToUrl(s.logo) : null,
+  }));
 }
 
 export async function upsertHeroSlide(slide: Partial<HeroSlide> & { title: string }) {
