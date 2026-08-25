@@ -168,6 +168,9 @@ export function CatalogTab() {
                     url: draft.videoUrl ?? "",
                     youtubeUrl: draft.youtubeUrl ?? "",
                     youtubeId: draft.youtubeVideoId ?? "",
+                    hlsUrl: draft.hlsUrl ?? "",
+                    externalId: draft.externalVideoId ?? "",
+                    subtitles: draft.subtitles ?? [],
                   }}
                   onChange={(v) =>
                     setDraft({
@@ -176,6 +179,9 @@ export function CatalogTab() {
                       videoUrl: v.url,
                       youtubeUrl: v.youtubeUrl,
                       youtubeVideoId: v.youtubeId,
+                      hlsUrl: v.hlsUrl,
+                      externalVideoId: v.externalId,
+                      subtitles: v.subtitles,
                     })
                   }
                 />
@@ -188,6 +194,9 @@ export function CatalogTab() {
                     url: draft.trailerUrl ?? "",
                     youtubeUrl: draft.trailerYoutubeUrl ?? "",
                     youtubeId: draft.trailerYoutubeId ?? "",
+                    hlsUrl: draft.trailerHlsUrl ?? "",
+                    externalId: draft.trailerExternalId ?? "",
+                    subtitles: draft.trailerSubtitles ?? [],
                   }}
                   onChange={(v) =>
                     setDraft({
@@ -196,6 +205,9 @@ export function CatalogTab() {
                       trailerUrl: v.url,
                       trailerYoutubeUrl: v.youtubeUrl,
                       trailerYoutubeId: v.youtubeId,
+                      trailerHlsUrl: v.hlsUrl,
+                      trailerExternalId: v.externalId,
+                      trailerSubtitles: v.subtitles,
                     })
                   }
                 />
