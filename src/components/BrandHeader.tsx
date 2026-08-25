@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   LogIn,
   LogOut,
+  Settings,
 } from "lucide-react";
 import mascote from "@/assets/mascote.png";
 import { useTheme } from "@/lib/theme";
@@ -116,7 +117,8 @@ export function BrandHeader() {
               </DropdownMenuLabel>
               <div className="py-2">
                 <DropdownMenuItem asChild>
-                  <Link to="/perfis" className="px-4 py-2.5 font-display text-sm">
+                  <Link to="/conta" className="px-4 py-2.5 font-display text-sm">
+                    <Settings className="h-4 w-4" />
                     Minha conta
                   </Link>
                 </DropdownMenuItem>
