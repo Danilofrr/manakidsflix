@@ -1,12 +1,13 @@
-import { useEffect, useState } from "react";
-import { Loader2, Trash2, Upload, Copy } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Trash2, Upload, Copy, Film } from "lucide-react";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { Button } from "@/components/ui/button";
+import { UploadQueueList, useUploadQueue } from "@/components/admin/UploadQueue";
 import {
   listMedia,
   removeMedia,
-  uploadMedia,
   formatBytes,
+  formatDuration,
   MEDIA_FOLDERS,
   type MediaAsset,
 } from "@/lib/media";
@@ -14,12 +15,11 @@ import {
 export function MediaTab() {
   const [assets, setAssets] = useState<MediaAsset[]>([]);
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [folder, setFolder] = useState<string>("capas");
   const [filter, setFilter] = useState<string>("todos");
 
-  async function refresh() {
+  const refresh = useCallback(async () => {
     setLoading(true);
     try {
       setAssets(await listMedia());
@@ -28,24 +28,13 @@ export function MediaTab() {
       setError((e as Error).message);
     }
     setLoading(false);
-  }
+  }, []);
+
+  const queue = useUploadQueue((asset) => setAssets((prev) => [asset, ...prev]));
 
   useEffect(() => {
     void refresh();
-  }, []);
-
-  async function handleFiles(files: FileList | null) {
-    if (!files?.length) return;
-    setBusy(true);
-    setError(null);
-    try {
-      for (const file of Array.from(files)) await uploadMedia(file, folder);
-      await refresh();
-    } catch (e) {
-      setError((e as Error).message);
-    }
-    setBusy(false);
-  }
+  }, [refresh]);
 
   const visible = assets.filter((a) => filter === "todos" || a.folder === filter);
 
@@ -53,7 +42,7 @@ export function MediaTab() {
     <>
       <PageHeader
         title="Biblioteca de mídia"
-        subtitle="Envie capas, banners, logos, trailers e vídeos. Tudo fica disponível nos formulários do painel."
+        subtitle="Envie capas, banners, logos, trailers e vídeos. Vídeos grandes usam envio em partes, com progresso e retomada."
       />
 
       <div className="rounded-3xl border border-border/60 bg-card p-5 shadow-card">
@@ -73,16 +62,21 @@ export function MediaTab() {
         </div>
 
         <label className="mt-4 flex cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border/70 px-4 py-8 font-display text-sm text-muted-foreground hover:border-primary hover:text-foreground">
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-          {busy ? "Enviando…" : "Clique para escolher imagens ou vídeos"}
+          <Upload className="h-4 w-4" />
+          Clique para escolher imagens ou vídeos (até 2 GB por arquivo)
           <input
             type="file"
             multiple
             accept="image/*,video/*"
             className="hidden"
-            onChange={(e) => void handleFiles(e.target.files)}
+            onChange={(e) => {
+              queue.enqueue(e.target.files ?? [], folder);
+              e.target.value = "";
+            }}
           />
         </label>
+
+        <UploadQueueList items={queue.items} onDismiss={queue.dismiss} onRetry={queue.retry} />
         {error && <p className="mt-3 text-sm font-semibold text-destructive">{error}</p>}
       </div>
 
@@ -111,13 +105,26 @@ export function MediaTab() {
             >
               {a.kind === "image" ? (
                 <img src={a.url} alt={a.name} className="h-32 w-full object-cover" loading="lazy" />
+              ) : a.thumbnail_url ? (
+                <img
+                  src={a.thumbnail_url}
+                  alt={a.name}
+                  className="h-32 w-full object-cover"
+                  loading="lazy"
+                />
               ) : (
-                <video src={a.url} className="h-32 w-full bg-foreground/5 object-cover" controls />
+                <div className="flex h-32 w-full items-center justify-center bg-muted">
+                  <Film className="h-8 w-8 text-muted-foreground" />
+                </div>
               )}
               <div className="p-3">
                 <p className="truncate font-display text-sm">{a.name}</p>
                 <p className="text-[11px] capitalize text-muted-foreground">
                   {a.folder} · {formatBytes(a.size_bytes)}
+                  {a.kind === "video" ? ` · ${formatDuration(a.duration_seconds)}` : ""}
+                </p>
+                <p className="mt-0.5 text-[11px] font-semibold capitalize text-secondary">
+                  {a.status === "ready" ? "pronto" : a.status}
                 </p>
                 <div className="mt-2 flex gap-1">
                   <Button
