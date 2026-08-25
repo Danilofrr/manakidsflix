@@ -12,6 +12,7 @@ import {
   listHeroSlides,
   reorderHeroSlides,
   upsertHeroSlide,
+  loadTitleMaps,
   type HeroSlide,
 } from "@/lib/hero-slides";
 import { useAppStore } from "@/lib/app-store";
@@ -19,6 +20,8 @@ import { useAppStore } from "@/lib/app-store";
 export function HeroSlidesTab() {
   const [slides, setSlides] = useState<HeroSlide[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [idBySlug, setIdBySlug] = useState<Map<string, string>>(new Map());
+  const [slugById, setSlugById] = useState<Map<string, string>>(new Map());
   const { state } = useAppStore();
 
   async function refresh() {
@@ -32,6 +35,10 @@ export function HeroSlidesTab() {
 
   useEffect(() => {
     void refresh();
+    void loadTitleMaps().then(({ idBySlug: a, slugById: b }) => {
+      setIdBySlug(a);
+      setSlugById(b);
+    });
   }, []);
 
   async function save(slide: HeroSlide) {
@@ -239,9 +246,9 @@ export function HeroSlidesTab() {
                     {state.stories.map((s) => (
                       <button
                         key={s.slug}
-                        onClick={() => void save({ ...slide, title_id: s.slug })}
+                        onClick={() => void save({ ...slide, title_id: idBySlug.get(s.slug) ?? null })}
                         className={`rounded-full border-2 px-3 py-1.5 text-xs ${
-                          slide.title_id === s.slug
+                          slide.title_id != null && slugById.get(slide.title_id) === s.slug
                             ? "border-primary bg-muted text-foreground"
                             : "border-border/70 text-muted-foreground"
                         }`}
