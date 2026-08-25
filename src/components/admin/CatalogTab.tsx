@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Film, Pencil, Plus, Trash2, Tv } from "lucide-react";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { MediaPicker } from "@/components/admin/MediaPicker";
+import { VideoSourceField } from "@/components/admin/VideoSourceField";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -159,21 +160,46 @@ export function CatalogTab() {
                   onChange={(cover) => setDraft({ ...draft, cover })}
                 />
 
-                <MediaPicker
+                <VideoSourceField
                   label="Vídeo principal"
-                  kind="video"
                   folder="videos"
-                  value={draft.videoUrl ?? ""}
-                  onChange={(videoUrl) => setDraft({ ...draft, videoUrl })}
+                  value={{
+                    source: draft.videoSource ?? "upload",
+                    url: draft.videoUrl ?? "",
+                    youtubeUrl: draft.youtubeUrl ?? "",
+                    youtubeId: draft.youtubeVideoId ?? "",
+                  }}
+                  onChange={(v) =>
+                    setDraft({
+                      ...draft,
+                      videoSource: v.source,
+                      videoUrl: v.url,
+                      youtubeUrl: v.youtubeUrl,
+                      youtubeVideoId: v.youtubeId,
+                    })
+                  }
                 />
 
-                <MediaPicker
+                <VideoSourceField
                   label="Trailer (opcional)"
-                  kind="video"
                   folder="trailers"
-                  value={draft.trailerUrl ?? ""}
-                  onChange={(trailerUrl) => setDraft({ ...draft, trailerUrl })}
+                  value={{
+                    source: draft.trailerSource ?? "upload",
+                    url: draft.trailerUrl ?? "",
+                    youtubeUrl: draft.trailerYoutubeUrl ?? "",
+                    youtubeId: draft.trailerYoutubeId ?? "",
+                  }}
+                  onChange={(v) =>
+                    setDraft({
+                      ...draft,
+                      trailerSource: v.source,
+                      trailerUrl: v.url,
+                      trailerYoutubeUrl: v.youtubeUrl,
+                      trailerYoutubeId: v.youtubeId,
+                    })
+                  }
                 />
+
 
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div>

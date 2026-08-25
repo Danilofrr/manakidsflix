@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { AppState, Category, Hero, Row, Story, Tone, Kind } from "@/lib/app-store";
+import type { AppState, Category, Hero, Row, Story, Tone, Kind, VideoSource } from "@/lib/app-store";
 
 import coverArca from "@/assets/cover-arca.jpg";
 import coverDavi from "@/assets/cover-davi.jpg";
@@ -78,6 +78,12 @@ export async function loadCms(): Promise<CmsData | null> {
     kind: (t.kind === "serie" ? "serie" : "filme") as Kind,
     ...(t.video_url ? { videoUrl: assetToUrl(t.video_url) } : {}),
     ...(t.trailer_url ? { trailerUrl: assetToUrl(t.trailer_url) } : {}),
+    videoSource: (t.video_source === "youtube" ? "youtube" : "upload") as VideoSource,
+    ...(t.youtube_url ? { youtubeUrl: t.youtube_url } : {}),
+    ...(t.youtube_video_id ? { youtubeVideoId: t.youtube_video_id } : {}),
+    trailerSource: (t.trailer_source === "youtube" ? "youtube" : "upload") as VideoSource,
+    ...(t.trailer_youtube_url ? { trailerYoutubeUrl: t.trailer_youtube_url } : {}),
+    ...(t.trailer_youtube_id ? { trailerYoutubeId: t.trailer_youtube_id } : {}),
     ...(progress[t.slug] ? { progress: progress[t.slug] } : {}),
   }));
 
@@ -130,6 +136,12 @@ export async function saveCms(state: AppState): Promise<void> {
     tags: s.tags,
     video_url: s.videoUrl ? urlToAsset(s.videoUrl) : null,
     trailer_url: s.trailerUrl ? urlToAsset(s.trailerUrl) : null,
+    video_source: s.videoSource === "youtube" ? "youtube" : "upload",
+    youtube_url: s.videoSource === "youtube" ? (s.youtubeUrl ?? null) : null,
+    youtube_video_id: s.videoSource === "youtube" ? (s.youtubeVideoId ?? null) : null,
+    trailer_source: s.trailerSource === "youtube" ? "youtube" : "upload",
+    trailer_youtube_url: s.trailerSource === "youtube" ? (s.trailerYoutubeUrl ?? null) : null,
+    trailer_youtube_id: s.trailerSource === "youtube" ? (s.trailerYoutubeId ?? null) : null,
     sort_order: index,
   }));
   if (titlePayload.length) {
