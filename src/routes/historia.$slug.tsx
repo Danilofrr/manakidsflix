@@ -1,11 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Play, Plus, ArrowLeft, Clock, BookOpen, Baby, Film } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Play, Plus, ArrowLeft, Clock, BookOpen, Baby, Film, RotateCcw, SkipForward } from "lucide-react";
 import { loadSeasonsWithEpisodes, titleIdBySlug, type Episode, type Season } from "@/lib/episodes";
 import { Button } from "@/components/ui/button";
 import { BrandHeader } from "@/components/BrandHeader";
 import { StoryRow } from "@/components/StoryRow";
+import { StoryCard } from "@/components/StoryCard";
+import { StreamPlayer } from "@/components/StreamPlayer";
 import { useAppStore } from "@/lib/app-store";
+import type { VideoSource } from "@/lib/youtube";
+import { COMPLETED_AT, getWatchProgress, saveWatchProgress } from "@/lib/watch-progress";
 
 export const Route = createFileRoute("/historia/$slug")({
   head: ({ params }) => {
@@ -26,33 +30,84 @@ export const Route = createFileRoute("/historia/$slug")({
   component: StoryPage,
 });
 
+type NowPlaying = {
+  source: VideoSource;
+  url: string;
+  youtubeId: string;
+  label: string;
+  episodeId: string | null;
+  startAt: number;
+};
+
 function StoryPage() {
   const { slug } = Route.useParams();
   const { state, storyBySlug } = useAppStore();
   const story = storyBySlug(slug);
   const related = state.stories.filter((s) => s.slug !== slug).slice(0, 5);
-  const [playing, setPlaying] = useState<{ url: string; label: string } | null>(null);
+  const [playing, setPlaying] = useState<NowPlaying | null>(null);
+  const [finished, setFinished] = useState(false);
   const [seasons, setSeasons] = useState<{ season: Season; episodes: Episode[] }[]>([]);
+  const [titleId, setTitleId] = useState<string | null>(null);
+  const [resumeAt, setResumeAt] = useState(0);
+  const lastSaved = useRef(0);
 
   useEffect(() => {
     setPlaying(null);
+    setFinished(false);
     let active = true;
     (async () => {
+      let id: string | null = null;
       try {
-        const id = await titleIdBySlug(slug);
-        if (!id) return;
-        const data = await loadSeasonsWithEpisodes(id);
-        if (active) setSeasons(data.filter((s) => s.episodes.some((e) => e.published)));
+        id = await titleIdBySlug(slug);
+        if (active) setTitleId(id);
+        if (id) {
+          const data = await loadSeasonsWithEpisodes(id);
+          if (active) setSeasons(data.filter((s) => s.episodes.some((e) => e.published)));
+        }
       } catch {
         /* sem temporadas cadastradas */
       }
+      const progress = await getWatchProgress(slug, id, null);
+      if (active && progress && !progress.completed) setResumeAt(progress.positionSeconds);
     })();
     return () => {
       active = false;
     };
   }, [slug]);
 
-  const mainVideo = story?.videoUrl ?? seasons[0]?.episodes.find((e) => e.published)?.video_url ?? "";
+  const firstEpisode = seasons[0]?.episodes.find((e) => e.published);
+
+  /** Fonte do vídeo principal: YouTube do admin, arquivo próprio ou 1º episódio. */
+  const main: { source: VideoSource; url: string; youtubeId: string } | null = story
+    ? story.videoSource === "youtube" && story.youtubeVideoId
+      ? { source: "youtube", url: "", youtubeId: story.youtubeVideoId }
+      : story.videoUrl
+        ? { source: "upload", url: story.videoUrl, youtubeId: "" }
+        : firstEpisode?.video_url
+          ? { source: "upload", url: firstEpisode.video_url, youtubeId: "" }
+          : null
+    : null;
+
+  const handleProgress = useCallback(
+    (current: number, duration: number) => {
+      if (!duration || Math.abs(current - lastSaved.current) < 5) return;
+      lastSaved.current = current;
+      void saveWatchProgress({
+        slug,
+        titleId,
+        episodeId: playing?.episodeId ?? null,
+        currentTime: current,
+        duration,
+      });
+    },
+    [slug, titleId, playing?.episodeId],
+  );
+
+  const startMain = () => {
+    if (!main || !story) return;
+    setFinished(false);
+    setPlaying({ ...main, label: story.title, episodeId: null, startAt: resumeAt });
+  };
 
   if (!story) {
     return (
@@ -71,6 +126,8 @@ function StoryPage() {
     );
   }
 
+  const nextStory = related[0];
+
   return (
     <div className="min-h-screen bg-background">
       <BrandHeader />
@@ -85,31 +142,72 @@ function StoryPage() {
         </Link>
 
         <div className="mt-4 grid gap-8 lg:grid-cols-[1.6fr_1fr]">
-          <div className="relative overflow-hidden rounded-4xl border-2 border-border/70 shadow-card">
+          <div>
             {playing ? (
-              <video
-                src={playing.url}
-                poster={story.cover}
-                controls
-                autoPlay
-                playsInline
-                className="aspect-video w-full bg-foreground/90 object-contain"
-              />
+              <div className="relative">
+                <StreamPlayer
+                  source={playing.source}
+                  url={playing.url}
+                  youtubeId={playing.youtubeId}
+                  title={playing.label}
+                  poster={story.cover}
+                  startAt={playing.startAt}
+                  onProgress={handleProgress}
+                  onEnded={() => setFinished(true)}
+                  onBack={() => setPlaying(null)}
+                />
+
+                {finished ? (
+                  <div className="absolute inset-0 z-10 grid place-items-center rounded-3xl bg-background/95 p-5">
+                    <div className="w-full max-w-md text-center">
+                      <h2 className="font-display text-2xl font-extrabold">Fim da história!</h2>
+                      <div className="mt-4 flex flex-wrap justify-center gap-3">
+                        <Button
+                          variant="play"
+                          size="pill"
+                          onClick={() => {
+                            setFinished(false);
+                            setResumeAt(0);
+                            setPlaying({ ...playing, startAt: 0 });
+                          }}
+                        >
+                          <RotateCcw />
+                          Assistir novamente
+                        </Button>
+                        {nextStory ? (
+                          <Button variant="bubble" size="pill" asChild>
+                            <Link to="/historia/$slug" params={{ slug: nextStory.slug }}>
+                              <SkipForward />
+                              Próximo
+                            </Link>
+                          </Button>
+                        ) : null}
+                      </div>
+                      <div className="mt-5 grid grid-cols-3 gap-3">
+                        {related.slice(0, 3).map((s) => (
+                          <StoryCard key={s.slug} story={s} />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
             ) : (
-              <>
+              <div className="relative overflow-hidden rounded-4xl border-2 border-border/70 shadow-card">
                 <img
                   src={story.cover}
                   alt={`Cena da história ${story.title}`}
                   className="aspect-video w-full object-cover"
                 />
                 <div className="absolute inset-0 grid place-items-center">
-                  {mainVideo ? (
+                  {main ? (
                     <button
                       aria-label={`Reproduzir ${story.title}`}
-                      onClick={() => setPlaying({ url: mainVideo, label: story.title })}
-                      className="grid h-20 w-20 place-items-center rounded-full bg-gradient-brand shadow-glow transition-transform duration-300 hover:scale-110"
+                      onClick={startMain}
+                      className="inline-flex items-center gap-2 rounded-full bg-gradient-brand px-6 py-4 font-display text-base text-primary-foreground shadow-glow transition-transform duration-300 hover:scale-105"
                     >
-                      <Play className="h-8 w-8 fill-current text-primary-foreground" />
+                      <Play className="h-6 w-6 fill-current" />
+                      {resumeAt > 5 ? "Continuar assistindo" : "Assistir"}
                     </button>
                   ) : (
                     <span className="rounded-full bg-background/85 px-4 py-2 font-display text-xs text-muted-foreground">
@@ -125,11 +223,8 @@ function StoryPage() {
                     />
                   </div>
                 ) : null}
-              </>
+              </div>
             )}
-            {playing ? (
-              <p className="bg-card px-4 py-2 font-display text-sm">{playing.label}</p>
-            ) : null}
           </div>
 
           <div>
@@ -168,15 +263,31 @@ function StoryPage() {
             </dl>
 
             <div className="mt-6 flex flex-wrap gap-3">
-              <Button
-                variant="play"
-                size="pill"
-                disabled={!mainVideo}
-                onClick={() => mainVideo && setPlaying({ url: mainVideo, label: story.title })}
-              >
+              <Button variant="play" size="pill" disabled={!main} onClick={startMain}>
                 <Play className="fill-current" />
-                {story.progress ? "Continuar" : "Assistir"}
+                {resumeAt > 5 ? "Continuar" : "Assistir"}
               </Button>
+              {(story.trailerSource === "youtube" && story.trailerYoutubeId) ||
+              story.trailerUrl ? (
+                <Button
+                  variant="bubble"
+                  size="pill"
+                  onClick={() => {
+                    setFinished(false);
+                    setPlaying({
+                      source: story.trailerSource === "youtube" ? "youtube" : "upload",
+                      url: story.trailerUrl ?? "",
+                      youtubeId: story.trailerYoutubeId ?? "",
+                      label: `${story.title} · Trailer`,
+                      episodeId: null,
+                      startAt: 0,
+                    });
+                  }}
+                >
+                  <Play />
+                  Trailer
+                </Button>
+              ) : null}
               <Button variant="bubble" size="pill">
                 <Plus />
                 Minha lista
@@ -199,13 +310,18 @@ function StoryPage() {
                       .map((ep) => (
                         <li key={ep.id}>
                           <button
-                            onClick={() =>
-                              ep.video_url &&
+                            onClick={() => {
+                              if (!ep.video_url) return;
+                              setFinished(false);
                               setPlaying({
+                                source: "upload",
                                 url: ep.video_url,
+                                youtubeId: "",
                                 label: `${ep.number}. ${ep.name}`,
-                              })
-                            }
+                                episodeId: ep.id,
+                                startAt: 0,
+                              });
+                            }}
                             className="flex w-full items-center gap-3 rounded-2xl border-2 border-border/70 bg-card p-3 text-left transition-colors hover:border-primary disabled:opacity-60"
                             disabled={!ep.video_url}
                           >
@@ -248,3 +364,6 @@ function StoryPage() {
     </div>
   );
 }
+
+/** Marca como concluído a partir de 90% assistido (regra usada no progresso). */
+export const COMPLETED_THRESHOLD = COMPLETED_AT;
