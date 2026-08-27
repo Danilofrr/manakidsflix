@@ -104,14 +104,18 @@ export async function loadCms(): Promise<CmsData | null> {
         : "mana_kids") as VideoSource,
     ...(t.hls_url ? { hlsUrl: t.hls_url } : {}),
     ...(t.video_provider ? { videoProvider: t.video_provider } : {}),
-    ...(t.provider_video_id || t.external_video_id
-      ? { providerVideoId: t.provider_video_id ?? t.external_video_id }
-      : {}),
+    ...(t.provider_video_id
+      ? { providerVideoId: t.provider_video_id }
+      : t.external_video_id
+        ? { providerVideoId: t.external_video_id }
+        : {}),
     ...(t.trailer_hls_url ? { trailerHlsUrl: t.trailer_hls_url } : {}),
     ...(t.trailer_video_provider ? { trailerVideoProvider: t.trailer_video_provider } : {}),
-    ...(t.trailer_provider_video_id || t.trailer_external_id
-      ? { trailerProviderVideoId: t.trailer_provider_video_id ?? t.trailer_external_id }
-      : {}),
+    ...(t.trailer_provider_video_id
+      ? { trailerProviderVideoId: t.trailer_provider_video_id }
+      : t.trailer_external_id
+        ? { trailerProviderVideoId: t.trailer_external_id }
+        : {}),
     subtitles: subtitlesFor(t.id, "main"),
     trailerSubtitles: subtitlesFor(t.id, "trailer"),
     ...(t.youtube_url ? { youtubeUrl: t.youtube_url } : {}),
