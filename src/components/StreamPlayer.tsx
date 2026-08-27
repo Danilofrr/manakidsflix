@@ -453,7 +453,7 @@ export function StreamPlayer(props: StreamPlayerProps) {
         ) : null}
 
         {/* clique/toque no vídeo controla play-pause */}
-        {started && !isYouTube ? (
+        {started ? (
           <button
             type="button"
             aria-label={playing ? "Pausar" : "Reproduzir"}
@@ -462,7 +462,9 @@ export function StreamPlayer(props: StreamPlayerProps) {
               revealControls();
             }}
             onDoubleClick={toggleFullscreen}
-            className="absolute inset-0 h-full w-full cursor-pointer bg-transparent"
+            className={`absolute inset-x-0 top-0 cursor-pointer bg-transparent ${
+              isYouTube ? "bottom-32 sm:bottom-24" : "bottom-0"
+            }`}
           />
         ) : null}
 
