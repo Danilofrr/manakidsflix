@@ -33,16 +33,13 @@ const fmt = (s: number) => {
 
 export type StreamPlayerProps = {
   source: VideoSource;
-  /** URL do arquivo (biblioteca Maná Kids ou MP4 externo). */
   url?: string;
-  /** Playlist HLS (.m3u8) para streaming externo. */
   hlsUrl?: string;
   youtubeId?: string;
   title: string;
   poster?: string;
   startAt?: number;
   subtitles?: SubtitleTrack[];
-  /** Pula a capa inicial quando o play já foi dado na página. */
   autoStart?: boolean;
   onProgress?: (currentTime: number, duration: number) => void;
   onEnded?: () => void;
@@ -85,6 +82,7 @@ export function StreamPlayer(props: StreamPlayerProps) {
   endedCb.current = onEnded;
 
   const isYouTube = source === "youtube" && Boolean(youtubeId);
+  const pref = useMemo(() => readCaptionPreference(), []);
 
   const [started, setStarted] = useState(autoStart);
   const [ready, setReady] = useState(false);
@@ -98,15 +96,13 @@ export function StreamPlayer(props: StreamPlayerProps) {
   const [ccMenu, setCcMenu] = useState(false);
   const [cueText, setCueText] = useState("");
   const [playbackError, setPlaybackError] = useState("");
-
-  // Legendas próprias continuam disponíveis para vídeos hospedados/MP4.
-  // Para fontes YouTube deixamos as legendas e o chrome do provedor desativados.
-  const pref = useMemo(() => readCaptionPreference(), []);
-  const tracks = isYouTube ? [] : subtitles;
+  const [resolvedUrls, setResolvedUrls] = useState<Record<string, string>>({});
   const [activeLang, setActiveLang] = useState<string | null>(() =>
     pref.enabled ? (pref.language ?? null) : null,
   );
-  const [resolvedUrls, setResolvedUrls] = useState<Record<string, string>>({});
+  const [ytCaptionsEnabled, setYtCaptionsEnabled] = useState(Boolean(pref.enabled));
+
+  const localTracks = isYouTube ? [] : subtitles;
 
   useEffect(() => {
     setStarted(autoStart);
@@ -116,8 +112,9 @@ export function StreamPlayer(props: StreamPlayerProps) {
     setDuration(0);
     setPlaybackError("");
     setCcMenu(false);
-    if (source === "youtube") setActiveLang(null);
-  }, [source, url, hlsUrl, youtubeId, autoStart]);
+    setCueText("");
+    if (source === "youtube") setYtCaptionsEnabled(Boolean(pref.enabled));
+  }, [source, url, hlsUrl, youtubeId, autoStart, pref.enabled]);
 
   useEffect(() => {
     let active = true;
@@ -132,10 +129,10 @@ export function StreamPlayer(props: StreamPlayerProps) {
   }, [subtitles]);
 
   useEffect(() => {
-    if (isYouTube || !tracks.length || activeLang || !pref.enabled) return;
-    const chosen = pickTrack(tracks, pref.language);
+    if (isYouTube || !localTracks.length || activeLang || !pref.enabled) return;
+    const chosen = pickTrack(localTracks, pref.language);
     if (chosen) setActiveLang(chosen.languageCode);
-  }, [tracks, pref.enabled, pref.language, activeLang, isYouTube]);
+  }, [localTracks, pref.enabled, pref.language, activeLang, isYouTube]);
 
   const chooseLanguage = (lang: string | null) => {
     setActiveLang(lang);
@@ -143,7 +140,52 @@ export function StreamPlayer(props: StreamPlayerProps) {
     writeCaptionPreference({ enabled: Boolean(lang), language: lang ?? pref.language });
   };
 
-  // ---- fullscreen ----
+  const applyYoutubeCaptions = useCallback((enabled: boolean) => {
+    const p = ytRef.current;
+    if (!p) return;
+
+    try {
+      if (!enabled) {
+        p.unloadModule?.("captions");
+        p.unloadModule?.("cc");
+        return;
+      }
+
+      p.loadModule?.("captions");
+      p.loadModule?.("cc");
+
+      // Espera o módulo carregar e escolhe português quando existir.
+      window.setTimeout(() => {
+        try {
+          const list: any[] =
+            p.getOption?.("captions", "tracklist") ??
+            p.getOption?.("cc", "tracklist") ??
+            [];
+
+          const preferred =
+            list.find((t: any) => /^pt(-|$)/i.test(t.languageCode ?? "")) ?? list[0];
+
+          if (preferred?.languageCode) {
+            p.setOption?.("captions", "track", { languageCode: preferred.languageCode });
+            p.setOption?.("cc", "track", { languageCode: preferred.languageCode });
+          }
+        } catch {
+          // O próprio YouTube seleciona a faixa padrão quando não expõe a lista.
+        }
+      }, 180);
+    } catch {
+      // Alguns vídeos não possuem legendas.
+    }
+  }, []);
+
+  const toggleYoutubeCaptions = useCallback(() => {
+    const next = !ytCaptionsEnabled;
+    setYtCaptionsEnabled(next);
+    setCcMenu(false);
+    writeCaptionPreference({ enabled: next, language: pref.language ?? "pt" });
+    applyYoutubeCaptions(next);
+  }, [applyYoutubeCaptions, pref.language, ytCaptionsEnabled]);
+
   useEffect(() => {
     const handler = () => setFullscreen(Boolean(document.fullscreenElement));
     document.addEventListener("fullscreenchange", handler);
@@ -155,13 +197,13 @@ export function StreamPlayer(props: StreamPlayerProps) {
       void document.exitFullscreen();
       return;
     }
+
     const shell = shellRef.current as any;
     if (shell?.requestFullscreen) void shell.requestFullscreen();
     else if ((videoRef.current as any)?.webkitEnterFullscreen)
       (videoRef.current as any).webkitEnterFullscreen();
   }, []);
 
-  // ---- HLS / arquivo ----
   useEffect(() => {
     if (isYouTube || !started) return;
     const video = videoRef.current;
@@ -179,6 +221,7 @@ export function StreamPlayer(props: StreamPlayerProps) {
           video.src = src;
           return;
         }
+
         const hls = new Hls({ enableWorker: true });
         hls.on(Hls.Events.ERROR, (_event, data) => {
           if (data.fatal) setPlaybackError("Não foi possível carregar este vídeo.");
@@ -197,7 +240,6 @@ export function StreamPlayer(props: StreamPlayerProps) {
     };
   }, [isYouTube, started, url, hlsUrl]);
 
-  // Legendas próprias renderizadas pelo Maná Kids.
   useEffect(() => {
     const video = videoRef.current;
     if (isYouTube || !video) return;
@@ -222,7 +264,6 @@ export function StreamPlayer(props: StreamPlayerProps) {
     return () => activeTrack?.removeEventListener("cuechange", onCue);
   }, [activeLang, isYouTube, started, resolvedUrls]);
 
-  // ---- YouTube via IFrame API, usando apenas os controles do Maná Kids ----
   useEffect(() => {
     if (!isYouTube || !started) return;
     let cancelled = false;
@@ -242,6 +283,8 @@ export function StreamPlayer(props: StreamPlayerProps) {
           disablekb: 1,
           iv_load_policy: 3,
           cc_load_policy: 0,
+          cc_lang_pref: "pt",
+          hl: "pt-BR",
           modestbranding: 1,
           origin: window.location.origin,
           start: Math.floor(startAt),
@@ -251,30 +294,24 @@ export function StreamPlayer(props: StreamPlayerProps) {
             setReady(true);
             setDuration(e.target.getDuration?.() ?? 0);
             setVolumeState(e.target.getVolume?.() ?? 100);
-
-            // Garante que legendas/CC do YouTube não apareçam sobre o player customizado.
-            try {
-              e.target.unloadModule?.("captions");
-              e.target.unloadModule?.("cc");
-            } catch {
-              // Alguns vídeos não expõem esses módulos.
-            }
-
             if (startAt > 0) e.target.seekTo(startAt, true);
+
+            if (ytCaptionsEnabled) applyYoutubeCaptions(true);
+            else applyYoutubeCaptions(false);
+
             e.target.playVideo();
           },
           onStateChange: (e: any) => {
-            const S = window.YT?.PlayerState;
-            setPlaying(e.data === S?.PLAYING);
-            if (e.data === S?.PLAYING) setDuration(e.target.getDuration?.() ?? 0);
-            if (e.data === S?.ENDED) endedCb.current?.();
+            setPlaying(e.data === 1);
+            if (e.data === 1) setDuration(e.target.getDuration?.() ?? 0);
+            if (e.data === 0) endedCb.current?.();
           },
           onError: () => setPlaybackError("Não foi possível carregar este vídeo."),
         },
       });
     });
 
-    const ticker = setInterval(() => {
+    const ticker = window.setInterval(() => {
       const p = ytRef.current;
       if (!p?.getCurrentTime) return;
       const t = p.getCurrentTime() ?? 0;
@@ -286,13 +323,19 @@ export function StreamPlayer(props: StreamPlayerProps) {
 
     return () => {
       cancelled = true;
-      clearInterval(ticker);
+      window.clearInterval(ticker);
       ytRef.current?.destroy?.();
       ytRef.current = null;
     };
-  }, [isYouTube, started, youtubeId, startAt]);
+  }, [
+    isYouTube,
+    started,
+    youtubeId,
+    startAt,
+    applyYoutubeCaptions,
+    ytCaptionsEnabled,
+  ]);
 
-  // ---- engine unificado ----
   const engine: Engine = useMemo(
     () =>
       isYouTube
@@ -329,7 +372,6 @@ export function StreamPlayer(props: StreamPlayerProps) {
     setCurrent(value);
   };
 
-  // ---- auto-ocultar controles ----
   const revealControls = useCallback(() => {
     setControlsVisible(true);
     if (hideTimer.current) clearTimeout(hideTimer.current);
@@ -343,13 +385,13 @@ export function StreamPlayer(props: StreamPlayerProps) {
       setControlsVisible(true);
       return;
     }
+
     revealControls();
     return () => {
       if (hideTimer.current) clearTimeout(hideTimer.current);
     };
   }, [playing, started, revealControls]);
 
-  // ---- atalhos de teclado (desktop e Smart TV) ----
   useEffect(() => {
     if (!started) return;
 
@@ -370,7 +412,10 @@ export function StreamPlayer(props: StreamPlayerProps) {
         const next = !muted;
         setMutedState(next);
         engine.setMuted(next);
+      } else if (e.key.toLowerCase() === "c" && isYouTube) {
+        toggleYoutubeCaptions();
       }
+
       revealControls();
     };
 
@@ -389,10 +434,9 @@ export function StreamPlayer(props: StreamPlayerProps) {
       onTouchStart={revealControls}
     >
       <div className="relative aspect-video w-full overflow-hidden bg-black">
-        {/* palco do vídeo */}
         {started ? (
           isYouTube ? (
-            <div className="pointer-events-none absolute inset-0 overflow-hidden bg-black [&_iframe]:absolute [&_iframe]:left-1/2 [&_iframe]:top-1/2 [&_iframe]:h-full [&_iframe]:w-full [&_iframe]:max-w-none [&_iframe]:-translate-x-1/2 [&_iframe]:-translate-y-1/2 [&_iframe]:scale-[1.16] [&_iframe]:border-0">
+            <div className="pointer-events-none absolute inset-0 overflow-hidden bg-black [&_iframe]:absolute [&_iframe]:left-1/2 [&_iframe]:top-1/2 [&_iframe]:h-full [&_iframe]:w-full [&_iframe]:max-w-none [&_iframe]:-translate-x-1/2 [&_iframe]:-translate-y-1/2 [&_iframe]:scale-[1.25] [&_iframe]:border-0">
               <div ref={ytHostRef} className="absolute inset-0 h-full w-full" />
             </div>
           ) : (
@@ -443,7 +487,6 @@ export function StreamPlayer(props: StreamPlayerProps) {
           </div>
         ) : null}
 
-        {/* camada de interação: impede que a interface do YouTube receba hover/clique */}
         {started ? (
           <button
             type="button"
@@ -457,7 +500,6 @@ export function StreamPlayer(props: StreamPlayerProps) {
           />
         ) : null}
 
-        {/* Quando pausado, cobrimos o botão central do provedor com a identidade Maná Kids. */}
         {started && ready && !playing ? (
           <div className="pointer-events-none absolute inset-0 z-20 grid place-items-center bg-black/10">
             <div className="grid h-16 w-16 place-items-center rounded-full bg-gradient-brand text-primary-foreground shadow-glow sm:h-20 sm:w-20">
@@ -466,7 +508,6 @@ export function StreamPlayer(props: StreamPlayerProps) {
           </div>
         ) : null}
 
-        {/* legendas próprias, somente para conteúdo não-YouTube */}
         {started && !isYouTube && cueText ? (
           <div
             className={`pointer-events-none absolute inset-x-0 z-20 flex justify-center px-6 transition-all ${
@@ -479,7 +520,6 @@ export function StreamPlayer(props: StreamPlayerProps) {
           </div>
         ) : null}
 
-        {/* capa personalizada antes do play */}
         {!started ? (
           <div className="absolute inset-0">
             {poster ? (
@@ -503,7 +543,6 @@ export function StreamPlayer(props: StreamPlayerProps) {
           </div>
         ) : null}
 
-        {/* controles Maná Kids sobre o vídeo, estilo streaming */}
         {started ? (
           <div
             className={`absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/90 via-black/45 to-transparent px-3 pb-3 pt-14 transition-opacity duration-300 sm:px-4 sm:pb-4 sm:pt-20 ${
@@ -562,7 +601,34 @@ export function StreamPlayer(props: StreamPlayerProps) {
               </span>
 
               <div className="ml-auto flex items-center gap-2">
-                {tracks.length > 0 ? (
+                {isYouTube ? (
+                  <button
+                    type="button"
+                    aria-label={
+                      ytCaptionsEnabled
+                        ? "Desativar legendas do YouTube"
+                        : "Ativar legendas do YouTube"
+                    }
+                    aria-pressed={ytCaptionsEnabled}
+                    title={
+                      ytCaptionsEnabled
+                        ? "Desativar legendas"
+                        : "Ativar legendas do YouTube"
+                    }
+                    onClick={toggleYoutubeCaptions}
+                    className={`${btn} ${
+                      ytCaptionsEnabled
+                        ? "bg-primary text-primary-foreground hover:bg-primary"
+                        : ""
+                    }`}
+                  >
+                    {ytCaptionsEnabled ? (
+                      <Captions className="h-5 w-5" />
+                    ) : (
+                      <CaptionsOff className="h-5 w-5" />
+                    )}
+                  </button>
+                ) : localTracks.length > 0 ? (
                   <div className="relative">
                     <button
                       aria-label="Legendas"
@@ -587,12 +653,14 @@ export function StreamPlayer(props: StreamPlayerProps) {
                         <button
                           onClick={() => chooseLanguage(null)}
                           className={`block w-full rounded-xl px-3 py-2 text-left text-sm ${
-                            activeLang ? "text-white/80 hover:bg-white/10" : "bg-white/15 text-white"
+                            activeLang
+                              ? "text-white/80 hover:bg-white/10"
+                              : "bg-white/15 text-white"
                           }`}
                         >
                           Desativadas
                         </button>
-                        {tracks.map((t) => (
+                        {localTracks.map((t) => (
                           <button
                             key={t.id}
                             onClick={() => chooseLanguage(t.languageCode)}
