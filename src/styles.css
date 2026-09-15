@@ -309,3 +309,38 @@
   aspect-ratio: auto !important;
   border-radius: 0 !important;
 }
+
+/*
+ * Recorte cinematográfico do YouTube.
+ * O iframe contém textos e marcações desenhados pelo próprio YouTube e não
+ * acessíveis pelo CSS do app. Mantemos o iframe maior que o palco e cortamos
+ * as bordas superior/inferior onde esses elementos aparecem, sem criar faixas
+ * pretas e preservando os controles próprios do Maná Kids por cima do vídeo.
+ */
+.aspect-video iframe[src*="youtube.com/embed"],
+.aspect-video iframe[src*="youtube-nocookie.com/embed"] {
+  position: absolute !important;
+  left: 50% !important;
+  top: 50% !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  border: 0 !important;
+  transform: translate(-50%, -50%) scale(1.45) !important;
+  transform-origin: center center !important;
+  pointer-events: none !important;
+  background: #000 !important;
+}
+
+:fullscreen .aspect-video iframe[src*="youtube.com/embed"],
+:fullscreen .aspect-video iframe[src*="youtube-nocookie.com/embed"],
+:-webkit-full-screen .aspect-video iframe[src*="youtube.com/embed"],
+:-webkit-full-screen .aspect-video iframe[src*="youtube-nocookie.com/embed"] {
+  left: 50% !important;
+  top: 50% !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  transform: translate(-50%, -50%) scale(1.45) !important;
+  transform-origin: center center !important;
+}
