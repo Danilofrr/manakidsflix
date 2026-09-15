@@ -101,6 +101,7 @@ export function StreamPlayer(props: StreamPlayerProps) {
     pref.enabled ? (pref.language ?? null) : null,
   );
   const [ytCaptionsEnabled, setYtCaptionsEnabled] = useState(Boolean(pref.enabled));
+  const ytCaptionsRef = useRef(Boolean(pref.enabled));
 
   const localTracks = isYouTube ? [] : subtitles;
 
@@ -113,7 +114,11 @@ export function StreamPlayer(props: StreamPlayerProps) {
     setPlaybackError("");
     setCcMenu(false);
     setCueText("");
-    if (source === "youtube") setYtCaptionsEnabled(Boolean(pref.enabled));
+    if (source === "youtube") {
+      const enabled = Boolean(pref.enabled);
+      setYtCaptionsEnabled(enabled);
+      ytCaptionsRef.current = enabled;
+    }
   }, [source, url, hlsUrl, youtubeId, autoStart, pref.enabled]);
 
   useEffect(() => {
@@ -154,7 +159,6 @@ export function StreamPlayer(props: StreamPlayerProps) {
       p.loadModule?.("captions");
       p.loadModule?.("cc");
 
-      // Espera o módulo carregar e escolhe português quando existir.
       window.setTimeout(() => {
         try {
           const list: any[] =
@@ -170,7 +174,7 @@ export function StreamPlayer(props: StreamPlayerProps) {
             p.setOption?.("cc", "track", { languageCode: preferred.languageCode });
           }
         } catch {
-          // O próprio YouTube seleciona a faixa padrão quando não expõe a lista.
+          // O YouTube usa a faixa padrão quando não expõe a lista.
         }
       }, 180);
     } catch {
@@ -179,12 +183,13 @@ export function StreamPlayer(props: StreamPlayerProps) {
   }, []);
 
   const toggleYoutubeCaptions = useCallback(() => {
-    const next = !ytCaptionsEnabled;
+    const next = !ytCaptionsRef.current;
+    ytCaptionsRef.current = next;
     setYtCaptionsEnabled(next);
     setCcMenu(false);
     writeCaptionPreference({ enabled: next, language: pref.language ?? "pt" });
     applyYoutubeCaptions(next);
-  }, [applyYoutubeCaptions, pref.language, ytCaptionsEnabled]);
+  }, [applyYoutubeCaptions, pref.language]);
 
   useEffect(() => {
     const handler = () => setFullscreen(Boolean(document.fullscreenElement));
@@ -296,9 +301,7 @@ export function StreamPlayer(props: StreamPlayerProps) {
             setVolumeState(e.target.getVolume?.() ?? 100);
             if (startAt > 0) e.target.seekTo(startAt, true);
 
-            if (ytCaptionsEnabled) applyYoutubeCaptions(true);
-            else applyYoutubeCaptions(false);
-
+            applyYoutubeCaptions(ytCaptionsRef.current);
             e.target.playVideo();
           },
           onStateChange: (e: any) => {
@@ -327,14 +330,7 @@ export function StreamPlayer(props: StreamPlayerProps) {
       ytRef.current?.destroy?.();
       ytRef.current = null;
     };
-  }, [
-    isYouTube,
-    started,
-    youtubeId,
-    startAt,
-    applyYoutubeCaptions,
-    ytCaptionsEnabled,
-  ]);
+  }, [isYouTube, started, youtubeId, startAt, applyYoutubeCaptions]);
 
   const engine: Engine = useMemo(
     () =>
@@ -610,11 +606,7 @@ export function StreamPlayer(props: StreamPlayerProps) {
                         : "Ativar legendas do YouTube"
                     }
                     aria-pressed={ytCaptionsEnabled}
-                    title={
-                      ytCaptionsEnabled
-                        ? "Desativar legendas"
-                        : "Ativar legendas do YouTube"
-                    }
+                    title={ytCaptionsEnabled ? "Desativar legendas" : "Ativar legendas do YouTube"}
                     onClick={toggleYoutubeCaptions}
                     className={`${btn} ${
                       ytCaptionsEnabled
