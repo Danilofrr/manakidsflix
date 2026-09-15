@@ -99,10 +99,10 @@ export function StreamPlayer(props: StreamPlayerProps) {
   const [cueText, setCueText] = useState("");
   const [playbackError, setPlaybackError] = useState("");
 
-  // ---- legendas ----
+  // Legendas próprias continuam disponíveis para vídeos hospedados/MP4.
+  // Para fontes YouTube deixamos as legendas e o chrome do provedor desativados.
   const pref = useMemo(() => readCaptionPreference(), []);
-  const [ytTracks, setYtTracks] = useState<SubtitleTrack[]>([]);
-  const tracks = isYouTube ? ytTracks : subtitles;
+  const tracks = isYouTube ? [] : subtitles;
   const [activeLang, setActiveLang] = useState<string | null>(() =>
     pref.enabled ? (pref.language ?? null) : null,
   );
@@ -115,6 +115,8 @@ export function StreamPlayer(props: StreamPlayerProps) {
     setCurrent(0);
     setDuration(0);
     setPlaybackError("");
+    setCcMenu(false);
+    if (source === "youtube") setActiveLang(null);
   }, [source, url, hlsUrl, youtubeId, autoStart]);
 
   useEffect(() => {
@@ -129,37 +131,16 @@ export function StreamPlayer(props: StreamPlayerProps) {
     };
   }, [subtitles]);
 
-  // aplica a preferência salva assim que sabemos quais faixas existem
   useEffect(() => {
-    if (!tracks.length || activeLang) return;
-    if (!pref.enabled) return;
+    if (isYouTube || !tracks.length || activeLang || !pref.enabled) return;
     const chosen = pickTrack(tracks, pref.language);
     if (chosen) setActiveLang(chosen.languageCode);
-  }, [tracks, pref.enabled, pref.language, activeLang]);
+  }, [tracks, pref.enabled, pref.language, activeLang, isYouTube]);
 
   const chooseLanguage = (lang: string | null) => {
     setActiveLang(lang);
     setCcMenu(false);
     writeCaptionPreference({ enabled: Boolean(lang), language: lang ?? pref.language });
-    if (isYouTube) applyYouTubeCaptions(lang);
-  };
-
-  const applyYouTubeCaptions = (lang: string | null) => {
-    const p = ytRef.current;
-    if (!p) return;
-    try {
-      if (!lang) {
-        p.unloadModule?.("captions");
-        p.unloadModule?.("cc");
-      } else {
-        p.loadModule?.("captions");
-        p.loadModule?.("cc");
-        p.setOption?.("captions", "track", { languageCode: lang });
-        p.setOption?.("cc", "track", { languageCode: lang });
-      }
-    } catch {
-      /* nem todo vídeo expõe o módulo de legendas */
-    }
   };
 
   // ---- fullscreen ----
@@ -188,10 +169,12 @@ export function StreamPlayer(props: StreamPlayerProps) {
     if (!video || !src) return;
 
     let destroy: (() => void) | undefined;
+    let cancelled = false;
     const isHls = Boolean(hlsUrl) || /\.m3u8(\?|$)/i.test(src);
 
     if (isHls && !video.canPlayType("application/vnd.apple.mpegurl")) {
       void import("hls.js").then(({ default: Hls }) => {
+        if (cancelled) return;
         if (!Hls.isSupported()) {
           video.src = src;
           return;
@@ -207,44 +190,59 @@ export function StreamPlayer(props: StreamPlayerProps) {
     } else {
       video.src = src;
     }
-    return () => destroy?.();
+
+    return () => {
+      cancelled = true;
+      destroy?.();
+    };
   }, [isYouTube, started, url, hlsUrl]);
 
-  // legendas próprias renderizadas por nós (para controlar o estilo)
+  // Legendas próprias renderizadas pelo Maná Kids.
   useEffect(() => {
     const video = videoRef.current;
     if (isYouTube || !video) return;
     const list = Array.from(video.textTracks);
     let activeTrack: TextTrack | null = null;
+
     for (const t of list) {
       const isActive = Boolean(activeLang) && t.language === activeLang;
       t.mode = isActive ? "hidden" : "disabled";
       if (isActive) activeTrack = t;
     }
+
     setCueText("");
     if (!activeTrack) return;
+
     const onCue = () => {
       const cues = Array.from(activeTrack?.activeCues ?? []) as VTTCue[];
       setCueText(cues.map((c) => c.text.replace(/<[^>]+>/g, "")).join("\n"));
     };
+
     activeTrack.addEventListener("cuechange", onCue);
     return () => activeTrack?.removeEventListener("cuechange", onCue);
   }, [activeLang, isYouTube, started, resolvedUrls]);
 
-  // ---- YouTube ----
+  // ---- YouTube via IFrame API, usando apenas os controles do Maná Kids ----
   useEffect(() => {
     if (!isYouTube || !started) return;
     let cancelled = false;
 
     void loadYouTubeApi().then((YT) => {
       if (cancelled || !ytHostRef.current) return;
+
       ytRef.current = new YT.Player(ytHostRef.current, {
         videoId: youtubeId,
         playerVars: {
+          autoplay: 1,
           controls: 0,
           playsinline: 1,
           enablejsapi: 1,
           rel: 0,
+          fs: 0,
+          disablekb: 1,
+          iv_load_policy: 3,
+          cc_load_policy: 0,
+          modestbranding: 1,
           origin: window.location.origin,
           start: Math.floor(startAt),
         },
@@ -253,29 +251,17 @@ export function StreamPlayer(props: StreamPlayerProps) {
             setReady(true);
             setDuration(e.target.getDuration?.() ?? 0);
             setVolumeState(e.target.getVolume?.() ?? 100);
+
+            // Garante que legendas/CC do YouTube não apareçam sobre o player customizado.
+            try {
+              e.target.unloadModule?.("captions");
+              e.target.unloadModule?.("cc");
+            } catch {
+              // Alguns vídeos não expõem esses módulos.
+            }
+
             if (startAt > 0) e.target.seekTo(startAt, true);
             e.target.playVideo();
-            setTimeout(() => {
-              try {
-                const list: any[] =
-                  e.target.getOption?.("captions", "tracklist") ??
-                  e.target.getOption?.("cc", "tracklist") ??
-                  [];
-                const mapped: SubtitleTrack[] = (list ?? []).map((t: any, i: number) => ({
-                  id: `yt-${t.languageCode ?? i}`,
-                  languageCode: t.languageCode ?? String(i),
-                  languageName: t.languageName ?? t.displayName ?? t.languageCode ?? "Legenda",
-                  url: "",
-                  format: "vtt" as const,
-                  isDefault: i === 0,
-                }));
-                setYtTracks(mapped);
-                if (activeLang) applyYouTubeCaptions(activeLang);
-                else applyYouTubeCaptions(null);
-              } catch {
-                /* vídeo sem legendas */
-              }
-            }, 1200);
           },
           onStateChange: (e: any) => {
             const S = window.YT?.PlayerState;
@@ -283,6 +269,7 @@ export function StreamPlayer(props: StreamPlayerProps) {
             if (e.data === S?.PLAYING) setDuration(e.target.getDuration?.() ?? 0);
             if (e.data === S?.ENDED) endedCb.current?.();
           },
+          onError: () => setPlaybackError("Não foi possível carregar este vídeo."),
         },
       });
     });
@@ -303,8 +290,7 @@ export function StreamPlayer(props: StreamPlayerProps) {
       ytRef.current?.destroy?.();
       ytRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isYouTube, started, youtubeId]);
+  }, [isYouTube, started, youtubeId, startAt]);
 
   // ---- engine unificado ----
   const engine: Engine = useMemo(
@@ -366,44 +352,49 @@ export function StreamPlayer(props: StreamPlayerProps) {
   // ---- atalhos de teclado (desktop e Smart TV) ----
   useEffect(() => {
     if (!started) return;
+
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA") return;
+
       if (e.key === " " || e.key === "k") {
         e.preventDefault();
         togglePlay();
-      } else if (e.key === "ArrowRight") seekTo(Math.min(duration, current + 10));
-      else if (e.key === "ArrowLeft") seekTo(Math.max(0, current - 10));
-      else if (e.key === "f") toggleFullscreen();
-      else if (e.key === "m") {
+      } else if (e.key === "ArrowRight") {
+        seekTo(Math.min(duration, current + 10));
+      } else if (e.key === "ArrowLeft") {
+        seekTo(Math.max(0, current - 10));
+      } else if (e.key === "f") {
+        toggleFullscreen();
+      } else if (e.key === "m") {
         const next = !muted;
         setMutedState(next);
         engine.setMuted(next);
       }
       revealControls();
     };
+
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   });
 
   const btn =
-    "grid place-items-center rounded-full bg-white/12 text-white transition-colors hover:bg-white/25 h-11 w-11 sm:h-10 sm:w-10";
+    "grid place-items-center rounded-full bg-black/45 text-white backdrop-blur-sm transition-colors hover:bg-black/65 h-11 w-11 sm:h-10 sm:w-10";
 
   return (
     <div
       ref={shellRef}
-      className="relative select-none overflow-hidden rounded-3xl bg-black shadow-card"
+      className="relative select-none overflow-hidden rounded-3xl bg-black shadow-card [&:fullscreen]:h-screen [&:fullscreen]:w-screen [&:fullscreen]:rounded-none"
       onMouseMove={revealControls}
       onTouchStart={revealControls}
     >
-      <div className="relative aspect-video w-full bg-black">
+      <div className="relative aspect-video w-full overflow-hidden bg-black">
         {/* palco do vídeo */}
         {started ? (
           isYouTube ? (
-            <div
-              ref={ytHostRef}
-              className="absolute inset-x-0 top-0 bottom-32 w-full bg-black sm:bottom-24"
-            />
+            <div className="pointer-events-none absolute inset-0 overflow-hidden bg-black [&_iframe]:absolute [&_iframe]:left-1/2 [&_iframe]:top-1/2 [&_iframe]:h-full [&_iframe]:w-full [&_iframe]:max-w-none [&_iframe]:-translate-x-1/2 [&_iframe]:-translate-y-1/2 [&_iframe]:scale-[1.16] [&_iframe]:border-0">
+              <div ref={ytHostRef} className="absolute inset-0 h-full w-full" />
+            </div>
           ) : (
             <video
               ref={videoRef}
@@ -411,7 +402,7 @@ export function StreamPlayer(props: StreamPlayerProps) {
               autoPlay
               playsInline
               crossOrigin="anonymous"
-              className="absolute inset-0 h-full w-full bg-black object-contain"
+              className="absolute inset-0 h-full w-full bg-black object-cover"
               onLoadedMetadata={(e) => {
                 setReady(true);
                 setDuration(e.currentTarget.duration || 0);
@@ -447,12 +438,12 @@ export function StreamPlayer(props: StreamPlayerProps) {
         ) : null}
 
         {started && playbackError ? (
-          <div className="absolute inset-0 z-10 grid place-items-center bg-background p-6 text-center">
+          <div className="absolute inset-0 z-40 grid place-items-center bg-background p-6 text-center">
             <p className="font-display text-sm text-muted-foreground">{playbackError}</p>
           </div>
         ) : null}
 
-        {/* clique/toque no vídeo controla play-pause */}
+        {/* camada de interação: impede que a interface do YouTube receba hover/clique */}
         {started ? (
           <button
             type="button"
@@ -462,16 +453,23 @@ export function StreamPlayer(props: StreamPlayerProps) {
               revealControls();
             }}
             onDoubleClick={toggleFullscreen}
-            className={`absolute inset-x-0 top-0 cursor-pointer bg-transparent ${
-              isYouTube ? "bottom-32 sm:bottom-24" : "bottom-0"
-            }`}
+            className="absolute inset-0 z-10 cursor-pointer bg-transparent"
           />
         ) : null}
 
-        {/* legendas próprias (fonte Maná Kids) */}
+        {/* Quando pausado, cobrimos o botão central do provedor com a identidade Maná Kids. */}
+        {started && ready && !playing ? (
+          <div className="pointer-events-none absolute inset-0 z-20 grid place-items-center bg-black/10">
+            <div className="grid h-16 w-16 place-items-center rounded-full bg-gradient-brand text-primary-foreground shadow-glow sm:h-20 sm:w-20">
+              <Play className="h-8 w-8 fill-current sm:h-10 sm:w-10" />
+            </div>
+          </div>
+        ) : null}
+
+        {/* legendas próprias, somente para conteúdo não-YouTube */}
         {started && !isYouTube && cueText ? (
           <div
-            className={`pointer-events-none absolute inset-x-0 flex justify-center px-6 transition-all ${
+            className={`pointer-events-none absolute inset-x-0 z-20 flex justify-center px-6 transition-all ${
               controlsVisible ? "bottom-24 sm:bottom-28" : "bottom-8"
             }`}
           >
@@ -489,7 +487,7 @@ export function StreamPlayer(props: StreamPlayerProps) {
             ) : (
               <div className="h-full w-full bg-gradient-brand" />
             )}
-            <div className="absolute inset-0 grid place-items-center bg-black/35">
+            <div className="absolute inset-0 grid place-items-center bg-black/25">
               <button
                 type="button"
                 aria-label={`Reproduzir ${title}`}
@@ -505,12 +503,10 @@ export function StreamPlayer(props: StreamPlayerProps) {
           </div>
         ) : null}
 
-        {/* controles Maná Kids */}
+        {/* controles Maná Kids sobre o vídeo, estilo streaming */}
         {started ? (
           <div
-            className={`absolute inset-x-0 bottom-0 px-3 pb-3 transition-opacity duration-300 sm:px-4 ${
-              isYouTube ? "bg-black pt-2" : "bg-gradient-to-t from-black/90 via-black/60 to-transparent pt-8"
-            } ${
+            className={`absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/90 via-black/45 to-transparent px-3 pb-3 pt-14 transition-opacity duration-300 sm:px-4 sm:pb-4 sm:pt-20 ${
               controlsVisible ? "opacity-100" : "pointer-events-none opacity-0"
             }`}
           >
@@ -523,7 +519,7 @@ export function StreamPlayer(props: StreamPlayerProps) {
               value={Math.min(current, duration || 0)}
               disabled={!ready && isYouTube}
               onChange={(e) => seekTo(Number(e.target.value))}
-              className="h-2 w-full cursor-pointer appearance-none rounded-full bg-white/25 accent-primary"
+              className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-white/30 accent-primary sm:h-2"
             />
 
             <div className="mt-2 flex flex-wrap items-center gap-2 text-white sm:gap-3">
@@ -532,6 +528,7 @@ export function StreamPlayer(props: StreamPlayerProps) {
                   <ArrowLeft className="h-5 w-5" />
                 </button>
               ) : null}
+
               <button
                 aria-label="Voltar 10 segundos"
                 onClick={() => seekTo(Math.max(0, current - 10))}
@@ -539,13 +536,19 @@ export function StreamPlayer(props: StreamPlayerProps) {
               >
                 <RotateCcw className="h-5 w-5" />
               </button>
+
               <button
                 aria-label={playing ? "Pausar" : "Reproduzir"}
                 onClick={togglePlay}
                 className="grid h-12 w-12 place-items-center rounded-full bg-gradient-brand text-primary-foreground shadow-glow"
               >
-                {playing ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6 fill-current" />}
+                {playing ? (
+                  <Pause className="h-6 w-6" />
+                ) : (
+                  <Play className="h-6 w-6 fill-current" />
+                )}
               </button>
+
               <button
                 aria-label="Avançar 10 segundos"
                 onClick={() => seekTo(Math.min(duration || current + 10, current + 10))}
@@ -575,8 +578,9 @@ export function StreamPlayer(props: StreamPlayerProps) {
                         <CaptionsOff className="h-5 w-5" />
                       )}
                     </button>
+
                     {ccMenu ? (
-                      <div className="absolute bottom-14 right-0 z-20 w-48 overflow-hidden rounded-2xl border border-white/15 bg-black/95 p-1 text-left">
+                      <div className="absolute bottom-14 right-0 z-50 w-48 overflow-hidden rounded-2xl border border-white/15 bg-black/95 p-1 text-left">
                         <p className="px-3 py-2 font-display text-xs uppercase text-white/60">
                           Legendas
                         </p>
@@ -617,6 +621,7 @@ export function StreamPlayer(props: StreamPlayerProps) {
                 >
                   {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
                 </button>
+
                 <input
                   type="range"
                   aria-label="Volume"
@@ -632,8 +637,13 @@ export function StreamPlayer(props: StreamPlayerProps) {
                   }}
                   className="hidden h-1.5 w-20 cursor-pointer appearance-none rounded-full bg-white/25 accent-primary sm:block"
                 />
+
                 <button aria-label="Tela cheia" onClick={toggleFullscreen} className={btn}>
-                  {fullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
+                  {fullscreen ? (
+                    <Minimize className="h-5 w-5" />
+                  ) : (
+                    <Maximize className="h-5 w-5" />
+                  )}
                 </button>
               </div>
             </div>
