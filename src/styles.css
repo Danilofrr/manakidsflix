@@ -253,3 +253,59 @@
 #lovable-badge {
   display: none !important;
 }
+
+/*
+ * StreamPlayer / YouTube
+ * A API do YouTube substitui o elemento host por um iframe com dimensões
+ * próprias. Forçamos o iframe a ocupar o palco inteiro para evitar margens
+ * e mantemos os controles personalizados do Maná Kids sobre o vídeo.
+ */
+.aspect-video > iframe[src*="youtube.com/embed"],
+.aspect-video > iframe[src*="youtube-nocookie.com/embed"] {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  border: 0 !important;
+  background: #000;
+}
+
+/* Tela cheia real: o palco ocupa 100% da viewport, sem bordas ou margens. */
+:fullscreen {
+  background: #000 !important;
+}
+
+:fullscreen > .aspect-video {
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: none !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  border-radius: 0 !important;
+  background: #000 !important;
+}
+
+:fullscreen > .aspect-video > iframe[src*="youtube.com/embed"],
+:fullscreen > .aspect-video > iframe[src*="youtube-nocookie.com/embed"],
+:fullscreen > .aspect-video > video {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: none !important;
+  max-height: none !important;
+}
+
+/* Safari/WebKit */
+:-webkit-full-screen {
+  background: #000 !important;
+}
+
+:-webkit-full-screen > .aspect-video {
+  width: 100vw !important;
+  height: 100vh !important;
+  aspect-ratio: auto !important;
+  border-radius: 0 !important;
+}
